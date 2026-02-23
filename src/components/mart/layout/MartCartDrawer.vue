@@ -14,8 +14,7 @@
   const emit = defineEmits([
     'checkout',
     'remove',
-    'increment',
-    'decrement',
+    'update-qty',
     'update:paymentMethod',
     'clear'
   ])
@@ -42,7 +41,7 @@
     location="right"
     width="400"
     permanent
-    elevation="4"
+    elevation="1"
     class="cart-drawer border-0"
   >
     <div class="d-flex flex-column fill-height bg-grey-lighten-5">
@@ -194,9 +193,9 @@
           block
           size="x-large"
           color="primary"
-          rounded="pill"
+          rounded="lg"
           class="text-none font-weight-black"
-          elevation="4"
+          elevation="1"
           :disabled="isEmpty"
           @click="emit('checkout')"
         >
@@ -209,10 +208,6 @@
 </template>
 
 <style scoped>
-  .cart-drawer {
-    z-index: 1004 !important; /* Above app bar if needed */
-  }
-
   .gap-2 {
     gap: 8px;
   }

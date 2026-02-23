@@ -30,12 +30,8 @@ const paymentMethod   = computed(() => posStore.paymentMethod)
 const paymentMethods  = computed(() => posStore.paymentMethods)
 
 /* ── CART ACTIONS ── */
-function handleIncrement(item) {
-  posStore.incrementQty(item)
-}
-
-function handleDecrement(item) {
-  posStore.decrementQty(item)
+function handleUpdateQty(item ,newQty) {
+  posStore.updateQty(item, newQty)
 }
 
 function handleRemove(item) {
@@ -108,8 +104,7 @@ onMounted(async () => {
       :total="total"
       :payment-method="paymentMethod"
       :payment-methods="paymentMethods"
-      @increment="handleIncrement"
-      @decrement="handleDecrement"
+      @update-qty="handleUpdateQty"
       @remove="handleRemove"
       @clear="handleClear"
       @checkout="handleCheckout"
