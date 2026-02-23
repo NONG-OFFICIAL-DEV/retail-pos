@@ -1,0 +1,89 @@
+{
+  "btn": {
+    "filter": "Filter",
+    "reFilter": "Clear Search",
+    "done": "Done",
+    "yes": "Yes",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "order": "Order",
+    "addToCart": "Add to Cart",
+    "placeOrder": "Place Order",
+    "back": "Back",
+    "next": "Next",
+    "confirm": "Confirm",
+    "yourOrder": "Your Order",
+    "orderMore": "Order More",
+    "viewHistory": "View All Placed Orders"
+  },
+  "common": {
+    "selectLanguage": "Select Language",
+    "search": "Search dishes, drinks...",
+    "menu": "Menu",
+    "cart": "Cart",
+    "total": "Total",
+    "quantity": "Quantity",
+    "price": "Price",
+    "items": "Items",
+    "emptyCart": "Your cart is empty",
+    "orderHistory": "Order History",
+    "dishesFound": "No dishes found",
+    "all": "All",
+    "scan": "Scan the menu and place your first order.",
+    "orderedItems": "Ordered Items",
+    "date": "Date",
+    "discount": "Discount",
+    "subtotal": "Subtotal",
+    "orderId": "Order ID",
+    "orderqId": "Order ID",
+    "table": "Table",
+    "addNote": "Add note",
+    "editNote": "Edit note",
+    "noteFor": "Note for",
+    "notePlaceholder": "Example: No spicy, no sugar, extra sauce...",
+    "tryOrderWord": "Try a different category or keyword",
+    "dishes": "Dishes",
+    "allDishes": "All Dishes"
+  },
+  "lang": {
+    "km": "Khmer",
+    "en": "English"
+  },
+  "orderStatus": {
+    "pending": "Pending",
+    "inProgress": "In Progress",
+    "completed": "Completed",
+    "cancelled": "Cancelled"
+  },
+  "notification": {
+    "addedToCart": "Added to cart",
+    "orderPlaced": "Order placed successfully",
+    "orderCancelled": "Order cancelled",
+    "limitOrder": "Only 5 orders per item can be ordered."
+  },
+  "messages": {
+    "thank": "Thank you for your order!",
+    "confirmed": "Order Confirmed!",
+    "wating": "Your order has been sent to the kitchen.",
+    "ready": "We'll notify you when it's ready.",
+    "clear": "Cart cleared",
+    "tableSelected": "Table {tableNumber} selected successfully"
+  },
+  "header": {
+    "orderTitle": "My Orders",
+    "orderHistory": "Order History"
+  },
+  "banner": {
+    "todaySpecial": "Today's Special",
+    "orderByPhone": "Order dishes and drinks using your phone",
+    "newDishes": "New Dishes"
+  },
+  "quickNotes": {
+    "noSpicy": "No spicy 🌶️",
+    "lessSalt": "Less salt",
+    "extraSauce": "Extra sauce",
+    "noOnion": "No onion"
+  }
+}
