@@ -4,8 +4,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: mobile-menu-frontend-beta
-    image: nongdev/mobile-menu-frontend-beta:latest
+    container_name: retail-pos-frontend
+    image: nongdev/retail-pos-frontend:latest
     restart: always
     networks:
       - web

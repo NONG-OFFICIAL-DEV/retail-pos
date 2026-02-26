@@ -2,7 +2,7 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ beta ]
+    branches: [ main ]
   workflow_dispatch:
 
 # =========================
@@ -12,7 +12,7 @@ jobs:
   build-push:
     runs-on: ubuntu-latest
     env:
-      IMAGE_FRONTEND: ${{ secrets.DOCKERHUB_USERNAME }}/mobile-menu-frontend-beta
+      IMAGE_FRONTEND: ${{ secrets.DOCKERHUB_USERNAME }}/retail-pos-frontend
       IMAGE_TAG: ${{ github.sha }}
     steps:
       - name: Checkout code
@@ -33,6 +33,11 @@ jobs:
             --build-arg VITE_APP_API_BASE_URL=${{ secrets.APP_API_BASE_URL }} \
             --build-arg VITE_APP_I18N_LOCALE=en \
             --build-arg VITE_APP_I18N_FALLBACK_LOCALE=en \
+            --build-arg VITE_APP_API_BASE_AI_URL=${{ secrets.AI_API_URL }} \
+            --build-arg VITE_REVERB_APP_KEY=${{ secrets.VITE_REVERB_APP_KEY }} \
+            --build-arg VITE_REVERB_HOST=${{ secrets.VITE_REVERB_HOST }} \
+            --build-arg VITE_REVERB_PORT=${{ secrets.VITE_REVERB_PORT }} \
+            --build-arg VITE_REVERB_SCHEME=https \
             -t $IMAGE_FRONTEND:latest \
             -t $IMAGE_FRONTEND:$IMAGE_TAG \
             .
@@ -59,7 +64,7 @@ jobs:
           username: ubuntu
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           source: "docker-compose.yml" # Or the path to your file
-          target: "~/mobile-menu"
+          target: "~/retail-pos-frontend"
 
       # STEP 2: Run the deployment script
       - name: Deploy via SSH
@@ -70,7 +75,7 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             set -e
-            cd ~/mobile-menu
+            cd ~/retail-pos-frontend
             
             echo ">>> Pulling latest images"
             docker compose pull
