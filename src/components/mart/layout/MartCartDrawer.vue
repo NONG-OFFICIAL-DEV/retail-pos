@@ -31,9 +31,6 @@
     { id: 'card', icon: 'mdi-credit-card-outline', label: 'Card' }
   ]
 
-  function fmt(val) {
-    return Number(val).toFixed(2)
-  }
 </script>
 
 <template>
@@ -144,19 +141,19 @@
         <div class="mb-4">
           <div class="d-flex justify-space-between text-body-2 mb-1">
             <span class="text-grey">Subtotal</span>
-            <span>${{ fmt(subtotal) }}</span>
+            <span>{{ formatCurrency(subtotal) }}</span>
           </div>
           <div
             class="d-flex justify-space-between text-body-2 mb-1 text-green-darken-1"
           >
             <span>Discount</span>
-            <span>-${{ fmt(discount) }}</span>
+            <span>-{{ formatCurrency(discount) }}</span>
           </div>
           <v-divider class="my-2" />
           <div class="d-flex justify-space-between align-center">
             <span class="text-h6 font-weight-black">Total</span>
             <span class="text-h5 font-weight-black text-primary">
-              ${{ fmt(total) }}
+              {{ formatCurrency(total) }}
             </span>
           </div>
         </div>
