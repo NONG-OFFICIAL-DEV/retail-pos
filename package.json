@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
-    "@nong-official-dev/core": "^1.0.4",
+    "@nong-official-dev/core": "^1.2.14",
     "axios": "^1.4.0",
     "pinia": "^2.1.7",
     "prettier": "^3.2.5",

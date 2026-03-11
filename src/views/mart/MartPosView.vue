@@ -22,7 +22,7 @@ const categories = computed(() => categoryStore.categories?.data || [])
 const isLoading  = computed(() => loadingStore.isLoading)
 
 const products = computed(() => {
-  let list = productStore.products?.data || []
+  let list = productStore.products || []
 
   if (selectedCategory.value !== 'all') {
     list = list.filter(p => p.category_id === selectedCategory.value)
@@ -121,7 +121,6 @@ onMounted(async () => {
         <div class="text-h6 text-grey mt-4">No products found</div>
         <p class="text-caption text-grey">Try adjusting your search or category</p>
       </v-col>
-
       <v-col
         v-for="product in products"
         :key="product.id"

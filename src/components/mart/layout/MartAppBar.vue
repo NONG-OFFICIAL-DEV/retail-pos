@@ -81,8 +81,9 @@ const initials = computed(() => {
       <!-- Operator label -->
       <div class="operator-info mr-3">
         <div class="op-label">OPERATOR</div>
+        <!-- {{ user }} -->
         <div class="op-name">
-          {{ user?.username?.toUpperCase() || '—' }}
+          {{ user?.full_name?.toUpperCase() || '—' }}
         </div>
       </div>
 
@@ -109,7 +110,7 @@ const initials = computed(() => {
           <!-- User info header -->
           <div class="dropdown-header pa-3">
             <div class="text-body-2 font-weight-bold text-truncate">
-              {{ user?.username?.toUpperCase() || 'Operator' }}
+              {{ user?.full_name?.toUpperCase() || 'Operator' }}
             </div>
             <div class="text-caption text-medium-emphasis">POS Cashier</div>
           </div>
