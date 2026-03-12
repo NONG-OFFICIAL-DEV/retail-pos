@@ -1,102 +1,99 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { usePosStore } from '@/stores/posStore'
-import { useProductStore } from '@/stores/productStore'
-import { useSaleStore } from '@/stores/saleStore'
-import { useAuthStore } from '@/stores/authStore'
-import { useAppUtils } from '@/composables/useAppUtils'
+  import { ref, computed, onMounted } from 'vue'
+  import { useRouter } from 'vue-router'
+  import { usePosStore } from '@/stores/posStore'
+  import { useProductStore } from '@/stores/productStore'
+  import { useOrderStore } from '@/stores/orderStore'
+  import { useAuthStore } from '@/stores/authStore'
+  import { useAppUtils } from '@/composables/useAppUtils'
 
-import MartAppBar    from '@/components/mart/layout/MartAppBar.vue'
-import MartCartDrawer from '@/components/mart/layout/MartCartDrawer.vue'
+  import MartAppBar from '@/components/mart/layout/MartAppBar.vue'
+  import MartCartDrawer from '@/components/mart/layout/MartCartDrawer.vue'
 
-const posStore     = usePosStore()
-const productStore = useProductStore()
-const saleStore    = useSaleStore()
-const authStore    = useAuthStore()
-const router       = useRouter()
-const { notif }    = useAppUtils()
+  const posStore = usePosStore()
+  const productStore = useProductStore()
+  const orderStore = useOrderStore()
+  const authStore = useAuthStore()
+  const router = useRouter()
+  const { notif } = useAppUtils()
 
-/* ── STATE ── */
-const search      = ref('')
-const user        = ref(null)
-const isLoading   = ref(false)
+  /* ── STATE ── */
+  const search = ref('')
+  const user = ref(null)
+  const isLoading = ref(false)
 
-/* ── COMPUTED ── */
-const activeItems     = computed(() => posStore.activeItems)
-const subtotal        = computed(() => posStore.subtotal)
-const total           = computed(() => posStore.total)
-const paymentMethod   = computed(() => posStore.paymentMethod)
-const paymentMethods  = computed(() => posStore.paymentMethods)
+  /* ── COMPUTED ── */
+  const activeItems = computed(() => posStore.activeItems)
+  const subtotal = computed(() => posStore.subtotal)
+  const total = computed(() => posStore.total)
+  const paymentMethod = computed(() => posStore.paymentMethod)
+  const paymentMethods = computed(() => posStore.paymentMethods)
 
-/* ── CART ACTIONS ── */
-function handleUpdateQty(item ,newQty) {
-  posStore.updateQty(item, newQty)
-}
-
-function handleRemove(item) {
-  posStore.removeFromCart(item)
-}
-
-function handleClear() {
-  posStore.clearCart()
-}
-
-/* ── CHECKOUT ── */
-async function handleCheckout() {
-  if (!activeItems.value.length) {
-    notif('Cart is empty!', { type: 'warning' })
-    return
+  /* ── CART ACTIONS ── */
+  function handleUpdateQty(item, newQty) {
+    posStore.updateQty(item, newQty)
   }
 
-  isLoading.value = true
-  try {
-    const payload = {
-      items: activeItems.value.map(i => ({
-        product_id:     i.id,
-        qty:            i.qty,
-        price:          i.price,
-        customizations: i.customizations || null
-      })),
-      total_amount:   total.value,
-      payment_method: paymentMethod.value
+  function handleRemove(item) {
+    posStore.removeFromCart(item)
+  }
+
+  function handleClear() {
+    posStore.clearCart()
+  }
+
+  /* ── CHECKOUT ── */
+  async function handleCheckout() {
+    if (!activeItems.value.length) {
+      notif('Cart is empty!', { type: 'warning' })
+      return
     }
 
-    await saleStore.checkout(payload)
-    posStore.clearCart()
-    notif('Checkout successful!', { type: 'success' })
-    await productStore.fetchProducts({}, { loading: 'skeleton' })
-  } catch (err) {
-    console.error('[mart:checkout]', err)
-    notif('Checkout failed. Please try again.', { type: 'error' })
-  } finally {
-    isLoading.value = false
+    isLoading.value = true
+    try {
+      const payload = {
+        items: activeItems.value.map(i => ({
+          product_id: i.id,
+          quantity: i.qty,
+          price: i.price,
+          customizations: i.customizations || null
+        })),
+        total_amount: total.value,
+        branch_id: '4475ed67-acfd-482f-923f-4c5f7d138056',
+        payment_method: paymentMethod.value
+      }
+
+      await orderStore.createOrder(payload)
+      posStore.clearCart()
+      notif('Checkout successful!', { type: 'success' })
+      await productStore.fetchProducts({}, { loading: 'skeleton' })
+    } catch (err) {
+      console.error('[mart:checkout]', err)
+      notif('Checkout failed. Please try again.', { type: 'error' })
+    } finally {
+      isLoading.value = false
+    }
   }
-}
 
-/* ── LOGOUT ── */
-async function handleLogout() {
-  await authStore.logout()
-  router.push({ name: 'Login' })
-}
-
-/* ── INIT ── */
-onMounted(async () => {
-  try {
-    await authStore.fetchMe()
-    user.value = authStore.me
-  } catch {
+  /* ── LOGOUT ── */
+  async function handleLogout() {
+    await authStore.logout()
     router.push({ name: 'Login' })
   }
-})
+
+  /* ── INIT ── */
+  onMounted(async () => {
+    try {
+      await authStore.fetchMe()
+      user.value = authStore.me
+    } catch {
+      router.push({ name: 'Login' })
+    }
+  })
 </script>
 <template>
   <v-app class="bg-grey-lighten-5">
-    <MartAppBar
-      v-model:search="search"
-      :user="user"
-      @logout="handleLogout"
-    />
+    <MartAppBar v-model:search="search" :user="user" @logout="handleLogout" />
 
     <MartCartDrawer
       :items="activeItems"
@@ -122,7 +119,12 @@ onMounted(async () => {
     <v-footer app color="white" border height="32" class="px-4">
       <div class="d-flex w-100 justify-space-between align-center">
         <div class="d-flex align-center">
-          <v-icon icon="mdi-database-check" size="14" color="success" class="mr-1" />
+          <v-icon
+            icon="mdi-database-check"
+            size="14"
+            color="success"
+            class="mr-1"
+          />
           <span class="text-xxs font-weight-bold text-grey">DB SYNCED</span>
         </div>
         <div class="text-xxs font-weight-bold text-grey">
@@ -134,33 +136,33 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-/* Ensure the layout feels like a desktop app, not a website */
-.main-content-wrapper {
-  /* Subtract header height and footer height */
-  height: calc(100vh - 70px - 32px);
-  overflow-y: auto;
-  scroll-behavior: smooth;
-  padding: 16px;
-}
-
-/* Custom Scrollbar for Main Content */
-.main-content-wrapper::-webkit-scrollbar {
-  width: 6px;
-}
-.main-content-wrapper::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 10px;
-}
-
-.text-xxs {
-  font-size: 0.65rem;
-  letter-spacing: 0.5px;
-}
-
-/* Fix for mobile: Ensure the drawer doesn't overlap content awkwardly */
-@media (max-width: 960px) {
+  /* Ensure the layout feels like a desktop app, not a website */
   .main-content-wrapper {
-    padding-bottom: 80px; /* Space for a floating checkout button if mobile */
+    /* Subtract header height and footer height */
+    height: calc(100vh - 70px - 32px);
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    padding: 16px;
   }
-}
+
+  /* Custom Scrollbar for Main Content */
+  .main-content-wrapper::-webkit-scrollbar {
+    width: 6px;
+  }
+  .main-content-wrapper::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+  }
+
+  .text-xxs {
+    font-size: 0.65rem;
+    letter-spacing: 0.5px;
+  }
+
+  /* Fix for mobile: Ensure the drawer doesn't overlap content awkwardly */
+  @media (max-width: 960px) {
+    .main-content-wrapper {
+      padding-bottom: 80px; /* Space for a floating checkout button if mobile */
+    }
+  }
 </style>

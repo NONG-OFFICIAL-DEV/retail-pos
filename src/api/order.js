@@ -2,10 +2,10 @@ import http from './api'
 
 export default {
   getAllOrder() {
-    return http.get('/orders')
+    return http.get('/v1/orders')
   },
   createOrder(payload,loading) {
-    return http.post('/orders', payload, {
+    return http.post('/v1/orders', payload, {
       meta: { loader:loading }
     })
   },
