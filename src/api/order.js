@@ -5,7 +5,7 @@ export default {
     return http.get('/v1/orders')
   },
   createOrder(payload,loading) {
-    return http.post('/v1/orders', payload, {
+    return http.post('/v1/mart/pos/orders', payload, {
       meta: { loader:loading }
     })
   },
