@@ -5,6 +5,7 @@
   import { useMartStore } from '@/stores/martStore'
   import { useLoadingStore } from '@/stores/loadingStore'
   import ProductUnitPicker from '@/components/mart/ProductUnitPicker.vue'
+  import { useAuthStore } from '@/stores/authStore'
 
   const productStore = useProductStore()
   const categoryStore = useCategoryStore()
@@ -13,6 +14,7 @@
   const pickerDialog = ref(false)
   const pickerProduct = ref(null)
   const customerType = ref('retail') // toggle globally or per-session
+  const authStore = useAuthStore()
 
   const openPicker = product => {
     // If product has no units → add directly, skip dialog
@@ -60,22 +62,12 @@
 
   const isEmpty = computed(() => !products.value.length && !isLoading.value)
 
-  /* ── ACTIONS ── */
-  function addToCart(product) {
-    martStore.addToCart({
-      id: product.id,
-      name: product.name,
-      price: product.base_price,
-      image_url: product.image_url,
-      qty: 1
-    })
-  }
-
   const handleAddToCart = payload => {
     martStore.addToCart({
       id: payload.product_id,
       product_unit_id: payload.product_unit_id,
-      name: `${payload.name} (${payload.unit_name})`,
+      name: payload.name,
+      unit: payload.unit_name,
       price: payload.price,
       qty_per_base: payload.qty_per_base,
       image_url: payload.image_url,
@@ -83,17 +75,13 @@
     })
   }
 
-  function getPrice(product) {
-    if (product.has_variants && product.variants?.length) {
-      return product.variants[0].price
-    }
-    return product.base_price
-  }
-
   /* ── INIT ── */
   onMounted(async () => {
     await Promise.all([
-      productStore.fetchProducts({}, { loading: 'skeleton' }),
+      productStore.fetchProducts(
+        { branch_id: authStore.branch_id },
+        { loading: 'skeleton' }
+      ),
       categoryStore.fetchCategories({}, { loading: 'skeleton' })
     ])
   })

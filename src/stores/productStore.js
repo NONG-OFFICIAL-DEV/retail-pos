@@ -8,8 +8,8 @@ export const useProductStore = defineStore('product', {
 
   actions: {
     async fetchProducts(filterParams = {}, loading) {
-      const res = await productService.getAll(filterParams, loading)
-      this.products = res.data
+      const res = await productService.getProducts(filterParams, loading)
+      this.products = res.data.data
     },
     async scanProduct(barcode) {
       const res = await productService.productsScan(barcode)

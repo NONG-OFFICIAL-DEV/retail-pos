@@ -33,7 +33,7 @@
     },
     max: {
       type: Number,
-      default: 5
+      default: 500
     },
     small: {
       type: Boolean,

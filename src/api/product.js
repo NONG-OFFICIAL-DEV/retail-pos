@@ -1,8 +1,8 @@
 import http from './api'
 
 export const productService = {
-  async getAll(params = {}, loading) {
-    const res = await http.get('/v1/products', {
+  async getProducts(params = {}, loading) {
+    const res = await http.get('/v1/mart/pos/products', {
       params,
       meta: { loader: loading }
     })

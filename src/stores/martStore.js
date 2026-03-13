@@ -7,59 +7,73 @@ export const useMartStore = defineStore('mart', {
   state: () => ({
     cartItems: [],
     paymentMethod: 'cash',
-    loading: false
+    loading: false,
+    discount: 0
   }),
 
   getters: {
     subtotal: state =>
       state.cartItems.reduce((sum, i) => sum + i.price * i.qty, 0),
-
-    total: state => state.subtotal, // extend with tax/discount later
-
+    total: state => Math.max(0, state.subtotal - state.discount),
     isEmpty: state => state.cartItems.length === 0,
-
     itemCount: state => state.cartItems.reduce((sum, i) => sum + i.qty, 0)
   },
 
   actions: {
-    // ── Add or increment ───────────────────────────────────────────────────
+    // ── Add or merge ───────────────────────────────────────────────────────
+    // Key = product_id + unit_id  →  1 box and 2 cans = 2 separate lines
+    //                              →  2 boxes = merged into qty: 2
     addToCart(product) {
-      const existing = this.cartItems.find(i => i.id === product.id)
+      const unitId = product.product_unit_id ?? 'base'
+      const key = `${product.id}__${unitId}`
+
+      const existing = this.cartItems.find(i => i._key === key)
+
       if (existing) {
-        existing.qty += 1
+        existing.qty += product.qty ?? 1
       } else {
         this.cartItems.push({
-          id: product.id,
+          _key: key, // merge key
+          id: product.id, // product_id
+          product_unit_id: product.product_unit_id ?? null,
           name: product.name,
-          price: parseFloat(product.price ?? product.base_price ?? 0),
+          unit: product.unit ?? product.unit_name ?? 'pcs', // display unit
+          qty_per_base: product.qty_per_base ?? 1,
+          price: parseFloat(
+            product.price ?? product.selling_price ?? product.base_price ?? 0
+          ),
           image_url: product.image_url ?? null,
-          qty: 1
+          qty: product.qty ?? 1
         })
       }
     },
 
-    // ── Update qty by item id ──────────────────────────────────────────────
-    updateQty(itemId, qty) {
+    // ── Update qty by _key ─────────────────────────────────────────────────
+    updateQty(key, qty) {
       if (qty <= 0) {
-        this.removeFromCart(itemId)
+        this.removeFromCart(key)
         return
       }
-      const item = this.cartItems.find(i => i.id === itemId)
+      const item = this.cartItems.find(i => i._key === key)
       if (item) item.qty = qty
     },
 
-    // ── Remove by item id ──────────────────────────────────────────────────
-    removeFromCart(itemId) {
-      this.cartItems = this.cartItems.filter(i => i.id !== itemId)
+    // ── Remove by _key ─────────────────────────────────────────────────────
+    removeFromCart(key) {
+      this.cartItems = this.cartItems.filter(i => i._key !== key)
     },
 
     clearCart() {
       this.cartItems = []
       this.paymentMethod = 'cash'
+      this.discount = 0
     },
 
     setPaymentMethod(method) {
       this.paymentMethod = method
+    },
+    setDiscount(amount) {
+      this.discount = parseFloat(amount) || 0
     },
 
     // ── Checkout ───────────────────────────────────────────────────────────
@@ -71,22 +85,21 @@ export const useMartStore = defineStore('mart', {
         notif('Cart is empty', { type: 'warning' })
         return false
       }
-
       if (!auth.branch_id) {
-        notif('No branch assigned to your account', { type: 'error' })
+        notif('No branch assigned', { type: 'error' })
         return false
       }
 
       this.loading = true
       try {
-        console.log(this.cartItems);
-        
         await orderStore.createOrder({
           branch_id: auth.branch_id,
           payment_method: this.paymentMethod,
           order_type: 'takeaway',
+          discount_amount: this.discount,
           items: this.cartItems.map(i => ({
             product_id: i.id,
+            product_unit_id: i.product_unit_id ?? null, // ← send unit to backend
             quantity: i.qty
           }))
         })

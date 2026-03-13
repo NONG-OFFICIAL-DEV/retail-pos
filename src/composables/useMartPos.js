@@ -36,8 +36,8 @@ export function useMartPos() {
 
   // ── Actions — pass item.id not the whole object ────────────────────────
   const addToCart = product => mart.addToCart(product)
-  const updateQty = (item, qty) => mart.updateQty(item.id, qty) // ← item.id
-  const removeItem = item => mart.removeFromCart(item.id) // ← item.id
+  const updateQty = (key, qty) => mart.updateQty(key, qty) // ← item.id
+  const removeItem = key => mart.removeFromCart(key) // ← item.id
   const clearCart = () => mart.clearCart()
   const setPayment = method => mart.setPaymentMethod(method)
   const checkout = () => mart.checkout(notif)

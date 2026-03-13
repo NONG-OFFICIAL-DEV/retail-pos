@@ -241,7 +241,10 @@
     }
     return parseFloat(unit.retail_price)
   }
-
+  // Add this function in script setup
+  const selectUnit = unit => {
+    selectedUnit.value = unit
+  }
   const unitPrice = computed(() =>
     parseFloat(props.product?.selling_price ?? props.product?.base_price ?? 0)
   )
@@ -281,9 +284,6 @@
   .unit-card {
     transition: all 0.15s;
     cursor: pointer;
-  }
-  .unit-card:hover {
-    border-color: rgb(var(--v-theme-primary)) !important;
   }
   .selected-unit {
     border-color: rgb(var(--v-theme-primary)) !important;

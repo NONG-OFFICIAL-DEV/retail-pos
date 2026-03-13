@@ -56,13 +56,15 @@
               </div>
               <div class="d-flex align-center justify-space-between mt-1">
                 <span class="text-tiny text-medium-emphasis">
-                  {{ fmt(item.price) }}
+                  {{ fmt(item.price) }} /   {{ item.unit }}
                 </span>
                 <QtyStepper
                   :model-value="item.qty"
                   density="compact"
                   small
-                  @update:model-value="val => emit('update-qty', item, val)"
+                  @update:model-value="
+                    val => emit('update-qty', item._key, val)
+                  "
                 />
               </div>
             </div>
@@ -173,11 +175,7 @@
           >
             Cancel
           </v-btn>
-          <v-btn
-            color="primary"
-            class="flex-grow-1"
-            @click="applyDiscount"
-          >
+          <v-btn color="primary" class="flex-grow-1" @click="applyDiscount">
             Apply
           </v-btn>
         </div>
