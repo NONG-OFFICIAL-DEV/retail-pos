@@ -1,5 +1,4 @@
 <template>
-  <!-- Triggered when cashier clicks a product card -->
   <v-dialog v-model="model" max-width="440" :persistent="false">
     <v-card rounded="xl" border elevation="0">
       <!-- Product header -->
@@ -15,9 +14,12 @@
           <div class="text-body-1 font-weight-black text-truncate">
             {{ product?.name }}
           </div>
-          <div class="text-caption text-medium-emphasis">
-            Stock: {{ product?.stock_quantity ?? '∞' }}
-            {{ product?.unit ?? 'pcs' }}
+          <!-- Stock display with color indicator -->
+          <div class="d-flex align-center gap-1 mt-1">
+            <v-icon :icon="stockIcon" :color="stockColor" size="13" />
+            <span class="text-caption" :class="`text-${stockColor}`">
+              {{ stockLabel }}
+            </span>
           </div>
         </div>
         <v-btn
@@ -31,6 +33,38 @@
       <v-divider />
 
       <v-card-text class="pa-4">
+        <!-- ── Stock alerts ─────────────────────────────────────────────── -->
+        <!-- Out of stock -->
+        <v-alert
+          v-if="isOutOfStock"
+          type="error"
+          variant="tonal"
+          density="compact"
+          rounded="lg"
+          class="mb-4"
+          icon="mdi-alert-circle-outline"
+        >
+          <strong>Out of stock.</strong>
+          Cannot add to cart.
+        </v-alert>
+
+        <!-- Low stock warning -->
+        <v-alert
+          v-else-if="isLowStock"
+          type="warning"
+          variant="tonal"
+          density="compact"
+          rounded="lg"
+          class="mb-4"
+          icon="mdi-alert-outline"
+        >
+          Only
+          <strong>
+            {{ fmtQty(product.stock_quantity) }} {{ product.unit ?? 'pcs' }}
+          </strong>
+          left in stock.
+        </v-alert>
+
         <!-- Customer type toggle -->
         <div class="d-flex align-center justify-space-between mb-4">
           <span class="text-caption font-weight-bold text-medium-emphasis">
@@ -52,7 +86,7 @@
           </v-btn-toggle>
         </div>
 
-        <!-- No units — simple qty input -->
+        <!-- No units -->
         <template v-if="!hasUnits">
           <div class="text-caption font-weight-bold text-medium-emphasis mb-2">
             QUANTITY
@@ -82,15 +116,21 @@
               variant="tonal"
               size="small"
               rounded="lg"
+              :disabled="qty >= maxQtyNoUnit"
               @click="qty++"
             />
             <div class="text-body-1 font-weight-black text-primary ml-auto">
               {{ fmt(unitPrice * qty) }}
             </div>
           </div>
+          <!-- Exceeds stock warning -->
+          <div v-if="qty > maxQtyNoUnit" class="text-caption text-error mt-2">
+            <v-icon icon="mdi-alert-circle-outline" size="13" class="mr-1" />
+            Exceeds available stock ({{ fmtQty(product.stock_quantity) }})
+          </div>
         </template>
 
-        <!-- Has units — show unit selector -->
+        <!-- Has units -->
         <template v-else>
           <div class="text-caption font-weight-bold text-medium-emphasis mb-2">
             SELECT UNIT
@@ -119,6 +159,18 @@
                       · {{ unit.barcode }}
                     </span>
                   </div>
+                  <!-- Max available in this unit -->
+                  <div
+                    class="text-caption"
+                    :class="
+                      maxForUnit(unit) <= 0
+                        ? 'text-error'
+                        : 'text-medium-emphasis'
+                    "
+                  >
+                    Max: {{ maxForUnit(unit) }}
+                    {{ unit.unit_label ?? unit.unit_name }} available
+                  </div>
                 </div>
                 <div class="text-right">
                   <div class="text-body-1 font-weight-black text-primary">
@@ -130,6 +182,17 @@
                   >
                     Wholesale
                   </div>
+                  <!-- Out of stock badge on unit -->
+                  <v-chip
+                    v-if="maxForUnit(unit) <= 0"
+                    size="x-small"
+                    color="error"
+                    variant="tonal"
+                    rounded="lg"
+                    class="mt-1"
+                  >
+                    Out of stock
+                  </v-chip>
                 </div>
               </div>
             </v-card>
@@ -167,11 +230,22 @@
                 variant="tonal"
                 size="small"
                 rounded="lg"
+                :disabled="qty >= maxForUnit(selectedUnit)"
                 @click="qty++"
               />
               <div class="text-body-1 font-weight-black text-primary ml-auto">
                 {{ fmt(unitPriceFor(selectedUnit) * qty) }}
               </div>
+            </div>
+
+            <!-- Exceeds stock warning -->
+            <div
+              v-if="qty > maxForUnit(selectedUnit)"
+              class="text-caption text-error mt-2"
+            >
+              <v-icon icon="mdi-alert-circle-outline" size="13" class="mr-1" />
+              Only {{ maxForUnit(selectedUnit) }}
+              {{ selectedUnit.unit_label ?? selectedUnit.unit_name }} available
             </div>
           </div>
         </template>
@@ -189,7 +263,7 @@
           rounded="lg"
           class="flex-grow-1"
           prepend-icon="mdi-cart-plus"
-          :disabled="hasUnits && !selectedUnit"
+          :disabled="!canAddToCart"
           @click="addToCart"
         >
           Add to Cart
@@ -219,13 +293,58 @@
 
   const hasUnits = computed(() => props.product?.active_units?.length > 0)
 
-  // Reset when product changes
+  // ── Stock status ──────────────────────────────────────────────────────────
+  const stockQty = computed(() =>
+    parseFloat(props.product?.stock_quantity ?? 0)
+  )
+  const isOutOfStock = computed(() => stockQty.value <= 0)
+  const isLowStock = computed(
+    () =>
+      props.product?.reorder_level != null &&
+      stockQty.value > 0 &&
+      stockQty.value <= parseFloat(props.product.reorder_level)
+  )
+
+  const stockColor = computed(() => {
+    if (isOutOfStock.value) return 'error'
+    if (isLowStock.value) return 'warning'
+    return 'success'
+  })
+  const stockIcon = computed(() => {
+    if (isOutOfStock.value) return 'mdi-alert-circle'
+    if (isLowStock.value) return 'mdi-alert'
+    return 'mdi-check-circle'
+  })
+  const stockLabel = computed(() => {
+    if (isOutOfStock.value) return 'Out of stock'
+    if (isLowStock.value)
+      return `Low stock · ${fmtQty(stockQty.value)} ${props.product?.unit ?? 'pcs'} left`
+    return `In stock · ${fmtQty(stockQty.value)} ${props.product?.unit ?? 'pcs'}`
+  })
+
+  // Max qty available when no units
+  const maxQtyNoUnit = computed(() => Math.floor(stockQty.value))
+
+  // Max qty available for a specific unit
+  const maxForUnit = unit =>
+    Math.floor(stockQty.value / parseFloat(unit.qty_per_base ?? 1))
+
+  // Can add to cart
+  const canAddToCart = computed(() => {
+    if (isOutOfStock.value) return false
+    if (hasUnits.value) {
+      if (!selectedUnit.value) return false
+      return qty.value <= maxForUnit(selectedUnit.value) && qty.value > 0
+    }
+    return qty.value <= maxQtyNoUnit.value && qty.value > 0
+  })
+
+  // ── Reset on product change ───────────────────────────────────────────────
   watch(
     () => props.product,
     () => {
       qty.value = 1
       selectedUnit.value = null
-      // Auto-select base unit
       if (hasUnits.value) {
         selectedUnit.value =
           props.product.active_units.find(u => u.is_base_unit) ??
@@ -235,23 +354,23 @@
     { immediate: true }
   )
 
-  const unitPriceFor = unit => {
-    if (customerType.value === 'wholesale' && unit.wholesale_price) {
-      return parseFloat(unit.wholesale_price)
-    }
-    return parseFloat(unit.retail_price)
-  }
-  // Add this function in script setup
   const selectUnit = unit => {
     selectedUnit.value = unit
+    qty.value = 1
   }
+
+  const unitPriceFor = unit => {
+    if (customerType.value === 'wholesale' && unit.wholesale_price)
+      return parseFloat(unit.wholesale_price)
+    return parseFloat(unit.retail_price)
+  }
+
   const unitPrice = computed(() =>
     parseFloat(props.product?.selling_price ?? props.product?.base_price ?? 0)
   )
 
   const addToCart = () => {
-    if (!props.product) return
-
+    if (!props.product || !canAddToCart.value) return
     emit('add', {
       product_id: props.product.id,
       product_unit_id: selectedUnit.value?.id ?? null,
@@ -269,10 +388,13 @@
       quantity: qty.value,
       customer_type: customerType.value
     })
-
     model.value = false
   }
 
+  const fmtQty = v => {
+    const n = parseFloat(v)
+    return Number.isInteger(n) ? n : parseFloat(n.toFixed(2))
+  }
   const fmt = v =>
     new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -287,7 +409,10 @@
   }
   .selected-unit {
     border-color: rgb(var(--v-theme-primary)) !important;
-    background: rgb(var(--v-theme-primary), 0.05) !important;
+    background: rgba(var(--v-theme-primary), 0.05) !important;
+  }
+  .gap-1 {
+    gap: 4px;
   }
   .gap-2 {
     gap: 8px;

@@ -2,6 +2,7 @@
 import { defineStore } from 'pinia'
 import { useAuthStore } from './authStore'
 import { useOrderStore } from './orderStore'
+import { useProductStore } from './productStore'
 
 export const useMartStore = defineStore('mart', {
   state: () => ({
@@ -80,6 +81,7 @@ export const useMartStore = defineStore('mart', {
     async checkout(notif) {
       const auth = useAuthStore()
       const orderStore = useOrderStore()
+      const productStore = useProductStore()
 
       if (!this.cartItems.length) {
         notif('Cart is empty', { type: 'warning' })
@@ -106,6 +108,7 @@ export const useMartStore = defineStore('mart', {
 
         this.clearCart()
         notif('Order placed successfully', { type: 'success' })
+        productStore.fetchProducts()
         return true
       } catch (err) {
         console.error('[mart:checkout]', err)

@@ -77,14 +77,30 @@
           :ripple="!isOutOfStock(product)"
           @click="isOutOfStock(product) ? null : openPicker(product)"
         >
-          <!-- Image + badges -->
-          <div class="product-img-wrap">
-            <v-img
-              :src="product.image_url"
-              height="110"
-              cover
-              :class="{ 'img-greyed': isOutOfStock(product) }"
-            />
+          <!-- ── Image area ─────────────────────────────────────────────── -->
+          <div
+            class="product-img-wrap"
+            :class="{ 'img-out': isOutOfStock(product) }"
+          >
+            <!-- Image with fallback -->
+            <div v-if="product.image_url" class="product-img">
+              <img
+                :src="product.image_url"
+                :alt="product.name"
+                class="product-img__img"
+                @error="e => (e.target.style.display = 'none')"
+              />
+            </div>
+
+            <!-- Fallback placeholder when no image -->
+            <div v-else class="product-img product-img--placeholder">
+              <div class="placeholder-initial">
+                {{ product.name?.charAt(0)?.toUpperCase() }}
+              </div>
+              <div class="placeholder-name text-caption text-medium-emphasis">
+                {{ product.name }}
+              </div>
+            </div>
 
             <!-- Out of stock overlay -->
             <div v-if="isOutOfStock(product)" class="out-overlay">
@@ -99,7 +115,7 @@
               </div>
             </div>
 
-            <!-- Low stock badge -->
+            <!-- Low stock badge (top right) -->
             <v-chip
               v-else-if="isLowStock(product)"
               size="x-small"
@@ -112,7 +128,7 @@
               Low
             </v-chip>
 
-            <!-- Stock count chip (top left) -->
+            <!-- Stock qty badge (bottom left) -->
             <v-chip
               size="x-small"
               variant="flat"
@@ -121,12 +137,11 @@
               :color="stockChipColor(product)"
             >
               {{ fmtQty(product.stock_quantity) }}
-              {{ product.unit ?? 'pcs' }}
             </v-chip>
           </div>
 
-          <v-card-text class="pa-2">
-            <!-- Name -->
+          <!-- ── Info area ──────────────────────────────────────────────── -->
+          <v-card-text class="pa-2 pt-2">
             <div class="product-name text-body-2 font-weight-bold mb-1">
               {{ product.name }}
             </div>
@@ -188,9 +203,7 @@
   import { useAuthStore } from '@/stores/authStore'
   import ProductUnitPicker from '@/components/mart/ProductUnitPicker.vue'
 
-  const props = defineProps({
-    search: { type: String, default: '' }
-  })
+  const props = defineProps({ search: { type: String, default: '' } })
 
   const productStore = useProductStore()
   const categoryStore = useCategoryStore()
@@ -203,7 +216,6 @@
   const pickerProduct = ref(null)
   const customerType = ref('retail')
 
-  // ── Computed ──────────────────────────────────────────────────────────────
   const categories = computed(() => categoryStore.categories?.data ?? [])
   const isLoading = computed(() => loadingStore.isLoading)
 
@@ -220,7 +232,6 @@
 
   const isEmpty = computed(() => !products.value.length && !isLoading.value)
 
-  // ── Stock helpers ─────────────────────────────────────────────────────────
   const isOutOfStock = p => parseFloat(p.stock_quantity) <= 0
   const isLowStock = p =>
     p.reorder_level != null &&
@@ -247,7 +258,6 @@
       currency: 'USD'
     }).format(v ?? 0)
 
-  // ── Actions ───────────────────────────────────────────────────────────────
   const openPicker = product => {
     if (!product.active_units?.length) {
       martStore.addToCart({ ...product, quantity: 1 })
@@ -270,7 +280,6 @@
     })
   }
 
-  // ── Init ──────────────────────────────────────────────────────────────────
   onMounted(async () => {
     await Promise.all([
       productStore.fetchProducts(
@@ -287,12 +296,13 @@
     position: relative;
   }
 
+  /* ── Sticky category bar ── */
   .sticky-category-wrapper {
     position: sticky;
     top: -16px;
     z-index: 5;
     margin: -16px -16px 0 -16px;
-    background: rgba(248, 250, 252, 0.9) !important;
+    background: rgba(248, 250, 252, 0.92) !important;
     backdrop-filter: blur(8px);
     border-bottom: 1px solid #e2e8f0;
   }
@@ -312,20 +322,68 @@
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08) !important;
   }
   .product-card--out {
-    opacity: 0.72;
+    opacity: 0.75;
     cursor: not-allowed !important;
-    border-color: rgb(var(--v-theme-error), 0.3) !important;
+    border-color: rgba(var(--v-theme-error), 0.35) !important;
   }
   .product-card--low {
-    border-color: rgb(var(--v-theme-warning), 0.5) !important;
+    border-color: rgba(var(--v-theme-warning), 0.5) !important;
   }
 
-  /* ── Image ── */
+  /* ── Image wrapper ── */
   .product-img-wrap {
     position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1; /* perfect square, works for any card width */
+    overflow: hidden;
+    background: #f8fafc;
   }
-  .img-greyed {
-    filter: grayscale(60%);
+  .img-out {
+    filter: grayscale(55%);
+  }
+
+  /* Real image */
+  .product-img {
+    width: 100%;
+    height: 100%;
+  }
+  .product-img__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* fills the square, crops sides if needed */
+    object-position: center;
+    display: block;
+    transition: transform 0.2s ease;
+  }
+  .product-card:not(.product-card--disabled):hover .product-img__img {
+    transform: scale(1.04); /* subtle zoom on hover */
+  }
+
+  /* Placeholder when no image */
+  .product-img--placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    padding: 8px;
+  }
+  .placeholder-initial {
+    font-size: 2rem;
+    font-weight: 900;
+    color: #94a3b8;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .placeholder-name {
+    text-align: center;
+    font-size: 10px;
+    color: #94a3b8;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    max-width: 90%;
   }
 
   /* Out of stock overlay */
@@ -337,6 +395,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    z-index: 1;
   }
 
   /* Badges */
@@ -346,15 +405,17 @@
     left: 6px;
     font-size: 10px !important;
     font-weight: 700 !important;
+    z-index: 2;
   }
   .stock-badge {
     position: absolute;
     top: 6px;
     right: 6px;
     font-size: 10px !important;
+    z-index: 2;
   }
 
-  /* Name truncation */
+  /* Name */
   .product-name {
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -367,7 +428,6 @@
   .gap-1 {
     gap: 4px;
   }
-
   :deep(.v-slide-group__content) {
     padding: 4px 0;
   }
