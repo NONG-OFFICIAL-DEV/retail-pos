@@ -1,95 +1,7 @@
-<script setup>
-  import { ref, computed, onMounted } from 'vue'
-  import { useProductStore } from '@/stores/productStore'
-  import { useCategoryStore } from '@/stores/categoryStore'
-  import { useMartStore } from '@/stores/martStore'
-  import { useLoadingStore } from '@/stores/loadingStore'
-  import ProductUnitPicker from '@/components/mart/ProductUnitPicker.vue'
-  import { useAuthStore } from '@/stores/authStore'
-
-  const productStore = useProductStore()
-  const categoryStore = useCategoryStore()
-  const martStore = useMartStore()
-  const loadingStore = useLoadingStore()
-  const pickerDialog = ref(false)
-  const pickerProduct = ref(null)
-  const customerType = ref('retail') // toggle globally or per-session
-  const authStore = useAuthStore()
-
-  const openPicker = product => {
-    // If product has no units → add directly, skip dialog
-    if (!product.active_units?.length) {
-      martStore.addToCart({ ...product, quantity: 1 })
-      return
-    }
-    pickerProduct.value = product
-    pickerDialog.value = true
-  }
-  const props = defineProps({
-    search: { type: String, default: '' }
-  })
-
-  /* ── STATE ── */
-  const selectedCategory = ref('all')
-
-  /* ── DATA ── */
-  const categories = computed(() => categoryStore.categories?.data || [])
-  const isLoading = computed(() => loadingStore.isLoading)
-
-  const minPrice = product =>
-    Math.min(...product.active_units.map(u => parseFloat(u.retail_price)))
-
-  const fmt = v =>
-    new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(v ?? 0)
-
-  const products = computed(() => {
-    let list = productStore.products || []
-
-    if (selectedCategory.value !== 'all') {
-      list = list.filter(p => p.category_id === selectedCategory.value)
-    }
-
-    if (props.search) {
-      const q = props.search.toLowerCase()
-      list = list.filter(p => p.name.toLowerCase().includes(q))
-    }
-
-    return list
-  })
-
-  const isEmpty = computed(() => !products.value.length && !isLoading.value)
-
-  const handleAddToCart = payload => {
-    martStore.addToCart({
-      id: payload.product_id,
-      product_unit_id: payload.product_unit_id,
-      name: payload.name,
-      unit: payload.unit_name,
-      price: payload.price,
-      qty_per_base: payload.qty_per_base,
-      image_url: payload.image_url,
-      qty: payload.quantity
-    })
-  }
-
-  /* ── INIT ── */
-  onMounted(async () => {
-    await Promise.all([
-      productStore.fetchProducts(
-        { branch_id: authStore.branch_id },
-        { loading: 'skeleton' }
-      ),
-      categoryStore.fetchCategories({}, { loading: 'skeleton' })
-    ])
-  })
-</script>
-
 <template>
   <div class="pos-products-view">
-    <div class="sticky-category-wrapper bg-grey-lighten-5 px-3">
+    <!-- Category filter -->
+    <div class="sticky-category-wrapper px-3">
       <v-slide-group
         v-model="selectedCategory"
         mandatory
@@ -107,7 +19,6 @@
             All Products
           </v-btn>
         </v-slide-group-item>
-
         <v-slide-group-item
           v-for="cat in categories"
           :key="cat.id"
@@ -128,8 +39,9 @@
     </div>
 
     <v-row class="mt-2" dense>
+      <!-- Skeleton -->
       <template v-if="isLoading">
-        <v-col v-for="n in 12" :key="n" cols="12" sm="6" md="4" lg="3">
+        <v-col v-for="n in 12" :key="n" cols="6" sm="3" md="2">
           <v-skeleton-loader
             type="image, list-item-two-line"
             rounded="xl"
@@ -138,6 +50,7 @@
         </v-col>
       </template>
 
+      <!-- Empty -->
       <v-col v-else-if="isEmpty" cols="12" class="text-center py-12">
         <v-icon icon="mdi-magnify-close" size="64" color="grey-lighten-1" />
         <div class="text-h6 text-grey mt-4">No products found</div>
@@ -145,49 +58,117 @@
           Try adjusting your search or category
         </p>
       </v-col>
+
+      <!-- Product cards -->
       <v-col
         v-for="product in products"
         :key="product.id"
-        cols="12"
-        sm="2"
+        cols="6"
+        sm="3"
         md="2"
-        lg="2"
       >
-        <v-card class="product-item-card" @click="openPicker(product)">
-          <v-img :src="product.image_url" height="130" cover />
-          <v-card-text class="pa-3">
-            <div class="text-body-2 font-weight-bold">{{ product.name }}</div>
+        <v-card
+          class="product-card"
+          :class="{
+            'product-card--out': isOutOfStock(product),
+            'product-card--low': isLowStock(product),
+            'product-card--disabled': isOutOfStock(product)
+          }"
+          :ripple="!isOutOfStock(product)"
+          @click="isOutOfStock(product) ? null : openPicker(product)"
+        >
+          <!-- Image + badges -->
+          <div class="product-img-wrap">
+            <v-img
+              :src="product.image_url"
+              height="110"
+              cover
+              :class="{ 'img-greyed': isOutOfStock(product) }"
+            />
 
-            <!-- Show price range if has units -->
+            <!-- Out of stock overlay -->
+            <div v-if="isOutOfStock(product)" class="out-overlay">
+              <v-icon
+                icon="mdi-close-circle"
+                size="28"
+                color="white"
+                class="mb-1"
+              />
+              <div class="text-caption font-weight-bold text-white">
+                Out of Stock
+              </div>
+            </div>
+
+            <!-- Low stock badge -->
+            <v-chip
+              v-else-if="isLowStock(product)"
+              size="x-small"
+              color="warning"
+              variant="flat"
+              rounded="lg"
+              class="stock-badge"
+            >
+              <v-icon start size="10" icon="mdi-alert" />
+              Low
+            </v-chip>
+
+            <!-- Stock count chip (top left) -->
+            <v-chip
+              size="x-small"
+              variant="flat"
+              rounded="lg"
+              class="qty-badge"
+              :color="stockChipColor(product)"
+            >
+              {{ fmtQty(product.stock_quantity) }}
+              {{ product.unit ?? 'pcs' }}
+            </v-chip>
+          </div>
+
+          <v-card-text class="pa-2">
+            <!-- Name -->
+            <div class="product-name text-body-2 font-weight-bold mb-1">
+              {{ product.name }}
+            </div>
+
+            <!-- Price -->
             <div
               v-if="product.active_units?.length"
-              class="text-caption text-primary font-weight-bold mt-1"
+              class="text-caption text-primary font-weight-black"
             >
               from {{ fmt(minPrice(product)) }}
             </div>
-            <div
-              v-else
-              class="text-subtitle-2 font-weight-black text-primary mt-1"
-            >
+            <div v-else class="text-caption text-primary font-weight-black">
               {{ fmt(product.selling_price ?? product.base_price) }}
             </div>
 
-            <!-- Unit badges -->
+            <!-- Unit chips -->
             <div class="d-flex gap-1 flex-wrap mt-1">
               <v-chip
-                v-for="u in product.active_units?.slice(0, 3)"
+                v-for="u in product.active_units?.slice(0, 2)"
                 :key="u.id"
                 size="x-small"
                 variant="tonal"
                 rounded="lg"
+                :color="u.is_base_unit ? 'primary' : 'default'"
               >
-                {{ u.unit_name }}
+                {{ u.unit_label ?? u.unit_name }}
+              </v-chip>
+              <v-chip
+                v-if="(product.active_units?.length ?? 0) > 2"
+                size="x-small"
+                variant="tonal"
+                rounded="lg"
+                color="grey"
+              >
+                +{{ product.active_units.length - 2 }}
               </v-chip>
             </div>
           </v-card-text>
         </v-card>
       </v-col>
     </v-row>
+
     <!-- Unit Picker Dialog -->
     <ProductUnitPicker
       v-model="pickerDialog"
@@ -197,6 +178,109 @@
     />
   </div>
 </template>
+
+<script setup>
+  import { ref, computed, onMounted } from 'vue'
+  import { useProductStore } from '@/stores/productStore'
+  import { useCategoryStore } from '@/stores/categoryStore'
+  import { useMartStore } from '@/stores/martStore'
+  import { useLoadingStore } from '@/stores/loadingStore'
+  import { useAuthStore } from '@/stores/authStore'
+  import ProductUnitPicker from '@/components/mart/ProductUnitPicker.vue'
+
+  const props = defineProps({
+    search: { type: String, default: '' }
+  })
+
+  const productStore = useProductStore()
+  const categoryStore = useCategoryStore()
+  const martStore = useMartStore()
+  const loadingStore = useLoadingStore()
+  const authStore = useAuthStore()
+
+  const selectedCategory = ref('all')
+  const pickerDialog = ref(false)
+  const pickerProduct = ref(null)
+  const customerType = ref('retail')
+
+  // ── Computed ──────────────────────────────────────────────────────────────
+  const categories = computed(() => categoryStore.categories?.data ?? [])
+  const isLoading = computed(() => loadingStore.isLoading)
+
+  const products = computed(() => {
+    let list = productStore.products ?? []
+    if (selectedCategory.value !== 'all')
+      list = list.filter(p => p.category_id === selectedCategory.value)
+    if (props.search) {
+      const q = props.search.toLowerCase()
+      list = list.filter(p => p.name.toLowerCase().includes(q))
+    }
+    return list
+  })
+
+  const isEmpty = computed(() => !products.value.length && !isLoading.value)
+
+  // ── Stock helpers ─────────────────────────────────────────────────────────
+  const isOutOfStock = p => parseFloat(p.stock_quantity) <= 0
+  const isLowStock = p =>
+    p.reorder_level != null &&
+    parseFloat(p.stock_quantity) > 0 &&
+    parseFloat(p.stock_quantity) <= parseFloat(p.reorder_level)
+
+  const stockChipColor = p => {
+    if (isOutOfStock(p)) return 'error'
+    if (isLowStock(p)) return 'warning'
+    return 'success'
+  }
+
+  const fmtQty = qty => {
+    const n = parseFloat(qty)
+    return Number.isInteger(n) ? n : parseFloat(n.toFixed(2))
+  }
+
+  const minPrice = product =>
+    Math.min(...product.active_units.map(u => parseFloat(u.retail_price)))
+
+  const fmt = v =>
+    new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(v ?? 0)
+
+  // ── Actions ───────────────────────────────────────────────────────────────
+  const openPicker = product => {
+    if (!product.active_units?.length) {
+      martStore.addToCart({ ...product, quantity: 1 })
+      return
+    }
+    pickerProduct.value = product
+    pickerDialog.value = true
+  }
+
+  const handleAddToCart = payload => {
+    martStore.addToCart({
+      id: payload.product_id,
+      product_unit_id: payload.product_unit_id,
+      name: payload.name,
+      unit: payload.unit_name,
+      price: payload.price,
+      qty_per_base: payload.qty_per_base,
+      image_url: payload.image_url,
+      qty: payload.quantity
+    })
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  onMounted(async () => {
+    await Promise.all([
+      productStore.fetchProducts(
+        { branch_id: authStore.branch_id },
+        { loading: 'skeleton' }
+      ),
+      categoryStore.fetchCategories({}, { loading: 'skeleton' })
+    ])
+  })
+</script>
 
 <style scoped>
   .pos-products-view {
@@ -213,35 +297,77 @@
     border-bottom: 1px solid #e2e8f0;
   }
 
-  .product-item-card {
-    transition: all 0.2s ease-in-out;
+  /* ── Card ── */
+  .product-card {
     cursor: pointer;
+    transition: all 0.18s ease;
     background: white !important;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px !important;
+    overflow: hidden;
   }
-
-  .product-item-card:hover {
-    transform: translateY(-4px);
+  .product-card:not(.product-card--disabled):hover {
+    transform: translateY(-3px);
     border-color: rgb(var(--v-theme-primary)) !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08) !important;
+  }
+  .product-card--out {
+    opacity: 0.72;
+    cursor: not-allowed !important;
+    border-color: rgb(var(--v-theme-error), 0.3) !important;
+  }
+  .product-card--low {
+    border-color: rgb(var(--v-theme-warning), 0.5) !important;
   }
 
-  .variant-chip {
+  /* ── Image ── */
+  .product-img-wrap {
+    position: relative;
+  }
+  .img-greyed {
+    filter: grayscale(60%);
+  }
+
+  /* Out of stock overlay */
+  .out-overlay {
     position: absolute;
-    top: 8px;
-    right: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
   }
 
-  .text-slate-900 {
-    color: #0f172a;
+  /* Badges */
+  .qty-badge {
+    position: absolute;
+    bottom: 6px;
+    left: 6px;
+    font-size: 10px !important;
+    font-weight: 700 !important;
   }
-  .text-xxs {
-    font-size: 0.65rem;
-  }
-  .uppercase {
-    text-transform: uppercase;
+  .stock-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    font-size: 10px !important;
   }
 
-  /* Scrollbar styling for the category slider if arrows are hidden */
+  /* Name truncation */
+  .product-name {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.3;
+    min-height: 2.6em;
+  }
+
+  .gap-1 {
+    gap: 4px;
+  }
+
   :deep(.v-slide-group__content) {
     padding: 4px 0;
   }
