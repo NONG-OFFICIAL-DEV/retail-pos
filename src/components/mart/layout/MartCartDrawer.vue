@@ -13,10 +13,10 @@
             <div
               class="text-caption font-weight-black text-uppercase text-medium-emphasis"
             >
-              Current Order
+              {{ t('orders.current_order') }}
             </div>
             <div class="text-body-2 font-weight-black">
-              {{ cart.itemCount }} Items
+              {{ cart.itemCount }} {{ t('common.items') }}
             </div>
           </div>
           <v-btn
@@ -56,7 +56,7 @@
               </div>
               <div class="d-flex align-center justify-space-between mt-1">
                 <span class="text-tiny text-medium-emphasis">
-                  {{ fmt(item.price) }} /   {{ item.unit }}
+                  {{ fmt(item.price) }} / {{ item.unit }}
                 </span>
                 <QtyStepper
                   :model-value="item.qty"
@@ -81,7 +81,7 @@
           >
             <v-icon icon="mdi-tag-plus-outline" size="16" class="mr-1" />
             <span class="text-tiny font-weight-black text-uppercase">
-              Add Discount / Coupon
+              {{ t('common.add_disscount_coupon') }}
             </span>
           </div>
 
@@ -101,7 +101,7 @@
 
         <div class="mb-3">
           <div class="d-flex justify-space-between text-tiny mb-1">
-            <span class="text-medium-emphasis">Subtotal</span>
+            <span class="text-medium-emphasis">{{ t('common.subtotal') }}</span>
             <span>{{ fmt(cart.subtotal) }}</span>
           </div>
           <div
@@ -112,7 +112,9 @@
             <span>-{{ fmt(cart.discount) }}</span>
           </div>
           <div class="d-flex justify-space-between align-center border-t pt-2">
-            <span class="text-body-2 font-weight-black">Grand Total</span>
+            <span class="text-body-2 font-weight-black">
+              {{ t('common.total') }}
+            </span>
             <span class="text-h6 font-weight-black text-primary">
               {{ fmt(cart.total) }}
             </span>
@@ -144,7 +146,7 @@
           :loading="loading"
           @click="emit('checkout')"
         >
-          Pay {{ fmt(cart.total) }}
+          {{ t('btn.pay') }} {{ fmt(cart.total) }}
         </v-btn>
       </div>
     </div>
@@ -185,9 +187,11 @@
 </template>
 
 <script setup>
-  import { ref } from 'vue'
-  import { formatCurrency } from '@nong-official-dev/core'
+  import { computed, ref } from 'vue'
+  import { formatKHR } from '@nong-official-dev/core'
   import QtyStepper from '@/components/customs/QtyStepper.vue'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
 
   const props = defineProps({
     cart: {
@@ -225,14 +229,12 @@
       showDiscountDialog.value = false
     }
   }
-
-  const paymentMethods = [
-    { id: 'cash', icon: 'mdi-cash', label: 'Cash' },
-    { id: 'card', icon: 'mdi-credit-card-outline', label: 'Card' },
-    { id: 'qr', icon: 'mdi-qrcode-scan', label: 'QR' }
-  ]
-
-  const fmt = v => formatCurrency(v ?? 0)
+  const paymentMethods = computed(() => [
+    { id: 'cash', icon: 'mdi-cash', label: t('orders.cash') },
+    { id: 'card', icon: 'mdi-credit-card-outline', label: t('orders.card') },
+    { id: 'qr', icon: 'mdi-qrcode-scan', label: t('orders.qr') }
+  ])
+  const fmt = v => formatKHR(v ?? 0)
 </script>
 
 <style scoped>

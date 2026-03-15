@@ -68,7 +68,7 @@
         <!-- Customer type toggle -->
         <div class="d-flex align-center justify-space-between mb-4">
           <span class="text-caption font-weight-bold text-medium-emphasis">
-            CUSTOMER TYPE
+            {{ t('unit.customer_type') }}
           </span>
           <v-btn-toggle
             v-model="customerType"
@@ -78,10 +78,10 @@
             variant="outlined"
           >
             <v-btn value="retail" size="small" class="text-none px-4">
-              Retail
+              {{ t('unit.retail') }}
             </v-btn>
             <v-btn value="wholesale" size="small" class="text-none px-4">
-              Wholesale
+              {{ t('unit.wholsale') }}
             </v-btn>
           </v-btn-toggle>
         </div>
@@ -89,7 +89,7 @@
         <!-- No units -->
         <template v-if="!hasUnits">
           <div class="text-caption font-weight-bold text-medium-emphasis mb-2">
-            QUANTITY
+            {{ t('common.quantity') }}
           </div>
           <div class="d-flex align-center gap-3">
             <v-btn
@@ -120,7 +120,7 @@
               @click="qty++"
             />
             <div class="text-body-1 font-weight-black text-primary ml-auto">
-              {{ fmt(unitPrice * qty) }}
+              {{ formatKHR(unitPrice * qty) }}
             </div>
           </div>
           <!-- Exceeds stock warning -->
@@ -133,7 +133,7 @@
         <!-- Has units -->
         <template v-else>
           <div class="text-caption font-weight-bold text-medium-emphasis mb-2">
-            SELECT UNIT
+            {{ t('unit.select_unit') }}
           </div>
           <div class="d-flex flex-column gap-2 mb-4">
             <v-card
@@ -152,7 +152,7 @@
                     {{ unit.unit_label || unit.unit_name }}
                   </div>
                   <div class="text-caption text-medium-emphasis">
-                    {{ unit.qty_per_base }} base unit{{
+                   <strong>{{ unit.qty_per_base }}</strong>  base unit{{
                       unit.qty_per_base > 1 ? 's' : ''
                     }}
                     <span v-if="unit.barcode" class="ml-2">
@@ -168,13 +168,13 @@
                         : 'text-medium-emphasis'
                     "
                   >
-                    Max: {{ maxForUnit(unit) }}
-                    {{ unit.unit_label ?? unit.unit_name }} available
+                    {{ t('common.max') }}: {{ maxForUnit(unit) }}
+                    {{ unit.unit_label ?? unit.unit_name }} {{ t('common.available') }}
                   </div>
                 </div>
                 <div class="text-right">
                   <div class="text-body-1 font-weight-black text-primary">
-                    {{ fmt(unitPriceFor(unit)) }}
+                    {{ formatKHR(unitPriceFor(unit)) }}
                   </div>
                   <div
                     v-if="customerType === 'wholesale' && unit.wholesale_price"
@@ -203,7 +203,7 @@
             <div
               class="text-caption font-weight-bold text-medium-emphasis mb-2"
             >
-              QUANTITY
+              {{ t('common.quantity') }}
             </div>
             <div class="d-flex align-center gap-3">
               <v-btn
@@ -234,7 +234,7 @@
                 @click="qty++"
               />
               <div class="text-body-1 font-weight-black text-primary ml-auto">
-                {{ fmt(unitPriceFor(selectedUnit) * qty) }}
+                {{ formatKHR(unitPriceFor(selectedUnit) * qty) }}
               </div>
             </div>
 
@@ -245,7 +245,7 @@
             >
               <v-icon icon="mdi-alert-circle-outline" size="13" class="mr-1" />
               Only {{ maxForUnit(selectedUnit) }}
-              {{ selectedUnit.unit_label ?? selectedUnit.unit_name }} available
+              {{ selectedUnit.unit_label ?? selectedUnit.unit_name }} {{ t('common.available') }}
             </div>
           </div>
         </template>
@@ -255,7 +255,7 @@
 
       <v-card-actions class="pa-4 gap-3">
         <v-btn variant="tonal" rounded="lg" @click="model = false">
-          Cancel
+          {{ t('btn.cancel') }}
         </v-btn>
         <v-btn
           color="primary"
@@ -266,7 +266,7 @@
           :disabled="!canAddToCart"
           @click="addToCart"
         >
-          Add to Cart
+          {{ t('btn.add_to_cart') }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -275,6 +275,9 @@
 
 <script setup>
   import { ref, computed, watch } from 'vue'
+  import { useI18n } from 'vue-i18n'
+  import { formatKHR } from '@nong-official-dev/core'
+  const { t } = useI18n()
 
   const props = defineProps({
     modelValue: { type: Boolean, default: false },
@@ -395,11 +398,6 @@
     const n = parseFloat(v)
     return Number.isInteger(n) ? n : parseFloat(n.toFixed(2))
   }
-  const fmt = v =>
-    new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(v ?? 0)
 </script>
 
 <style scoped>

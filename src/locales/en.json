@@ -45,7 +45,7 @@
     "notePlaceholder": "Example: No spicy, no sugar, extra sauce...",
     "tryOrderWord": "Try a different category or keyword",
     "dishes": "Dishes",
-    "allDishes": "All Dishes"
+    "grand_total": "Grand Total"
   },
   "lang": {
     "km": "Khmer",
@@ -85,5 +85,8 @@
     "lessSalt": "Less salt",
     "extraSauce": "Extra sauce",
     "noOnion": "No onion"
+  },
+  "product":{
+    "all_product":"All Product"
   }
 }

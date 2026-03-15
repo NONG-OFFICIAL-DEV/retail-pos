@@ -16,7 +16,7 @@
             rounded="lg"
             @click="toggle"
           >
-            All Products
+            {{ t('product.all_product') }}
           </v-btn>
         </v-slide-group-item>
         <v-slide-group-item
@@ -151,10 +151,10 @@
               v-if="product.active_units?.length"
               class="text-caption text-primary font-weight-black"
             >
-              from {{ fmt(minPrice(product)) }}
+              {{ t('common.from') }} {{ formatKHR(minPrice(product)) }}
             </div>
             <div v-else class="text-caption text-primary font-weight-black">
-              {{ fmt(product.selling_price ?? product.base_price) }}
+              {{ formatKHR(product.selling_price ?? product.base_price) }}
             </div>
 
             <!-- Unit chips -->
@@ -202,6 +202,9 @@
   import { useLoadingStore } from '@/stores/loadingStore'
   import { useAuthStore } from '@/stores/authStore'
   import ProductUnitPicker from '@/components/mart/ProductUnitPicker.vue'
+  import { useI18n } from 'vue-i18n'
+  import { formatKHR } from '@nong-official-dev/core'
+  const { t } = useI18n()
 
   const props = defineProps({ search: { type: String, default: '' } })
 
@@ -251,12 +254,6 @@
 
   const minPrice = product =>
     Math.min(...product.active_units.map(u => parseFloat(u.retail_price)))
-
-  const fmt = v =>
-    new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(v ?? 0)
 
   const openPicker = product => {
     if (!product.active_units?.length) {

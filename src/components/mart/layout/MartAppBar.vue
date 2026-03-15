@@ -26,7 +26,7 @@
     <v-responsive max-width="520" class="flex-grow-1 mx-5">
       <v-text-field
         :model-value="search"
-        placeholder="Scan barcode or search product..."
+        :placeholder="t('common.search')"
         variant="outlined"
         density="compact"
         hide-details
@@ -60,6 +60,12 @@
         <div class="dt-date">{{ currentDate }}</div>
       </div>
 
+      <v-divider
+        vertical
+        class="border-opacity-20 mx-2"
+        style="height: 24px; align-self: center"
+      />
+      <LanguageSwicher></LanguageSwicher>
       <v-divider
         vertical
         class="border-opacity-20 mx-2"
@@ -174,7 +180,9 @@
 
 <script setup>
   import { ref, computed, onMounted, onUnmounted } from 'vue'
-
+  import LanguageSwicher from '@/components/customs/LanguageSwicher.vue'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   // ── Single "operator" prop instead of 6 separate props ────────────────────────
   const props = defineProps({
     search: { type: String, default: '' },
