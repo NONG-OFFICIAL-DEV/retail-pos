@@ -1,82 +1,154 @@
 <template>
-  <div class="category-container">
+  <div class="category-bar px-2">
     <v-slide-group
-      :model-value="modelValue"
-      @update:model-value="$emit('update:modelValue', $event)"
+      v-model="internalValue"
       mandatory
-      show-arrows
-      class="category-slider"
+      show-arrows="always"
+      class="category-slide-group py-1"
     >
-      <v-slide-group-item value="all" v-slot="{ isSelected, toggle }">
+      <!-- Arrow overrides -->
+      <template #prev>
         <v-btn
-          :class="['cat-pill', { 'cat-pill--active': isSelected }]"
-          :variant="isSelected ? 'elevated' : 'flat'"
-          @click="toggle"
-          rounded="xl"
-          elevation="0"
+          icon
+          variant="flat"
+          size="x-small"
+          color="white"
+          class="arrow-btn border"
+          elevation="2"
         >
-          <v-icon start icon="mdi-apps" size="small" v-if="isSelected" />
-          {{ t('product.all_product') }}
+          <v-icon icon="mdi-chevron-left" size="16" />
         </v-btn>
+      </template>
+      <template #next>
+        <v-btn
+          icon
+          variant="flat"
+          size="x-small"
+          color="white"
+          class="arrow-btn border"
+          elevation="2"
+        >
+          <v-icon icon="mdi-chevron-right" size="16" />
+        </v-btn>
+      </template>
+
+      <!-- All products -->
+      <v-slide-group-item value="all" v-slot="{ isSelected, toggle }">
+        <v-chip
+          class="cat-chip ma-1"
+          :class="{ 'cat-chip--active': isSelected }"
+          :color="isSelected ? 'primary' : undefined"
+          :variant="isSelected ? 'flat' : 'outlined'"
+          :elevation="isSelected ? 2 : 0"
+          size="default"
+          rounded="pill"
+          @click="toggle"
+        >
+          <template #prepend>
+            <v-icon
+              :icon="isSelected ? 'mdi-view-grid' : 'mdi-view-grid-outline'"
+              size="15"
+              class="mr-1"
+            />
+          </template>
+          {{ t('product.all_product') }}
+        </v-chip>
       </v-slide-group-item>
 
+      <!-- Category items -->
       <v-slide-group-item
         v-for="cat in categories"
         :key="cat.id"
         :value="cat.id"
         v-slot="{ isSelected, toggle }"
       >
-        <v-btn
-          :class="['cat-pill', { 'cat-pill--active': isSelected }]"
-          :variant="isSelected ? 'elevated' : 'flat'"
+        <v-chip
+          class="cat-chip ma-1"
+          :class="{ 'cat-chip--active': isSelected }"
+          :color="isSelected ? 'primary' : undefined"
+          :variant="isSelected ? 'flat' : 'outlined'"
+          :elevation="isSelected ? 2 : 0"
+          size="default"
+          rounded="pill"
           @click="toggle"
-          rounded="xl"
-          elevation="0"
         >
+          <template v-if="cat.icon" #prepend>
+            <v-icon :icon="cat.icon" size="15" class="mr-1" />
+          </template>
           {{ cat.name }}
-        </v-btn>
+        </v-chip>
       </v-slide-group-item>
     </v-slide-group>
   </div>
 </template>
 
 <script setup>
-import { useI18n } from 'vue-i18n'
-const { t } = useI18n()
+  import { computed } from 'vue'
+  import { useI18n } from 'vue-i18n'
 
-defineProps({
-  modelValue: { type: [String, Number], default: 'all' },
-  categories: { type: Array, default: () => [] }
-})
+  const { t } = useI18n()
 
-defineEmits(['update:modelValue'])
+  const props = defineProps({
+    modelValue: { type: [String, Number], default: 'all' },
+    categories: { type: Array, default: () => [] }
+  })
+
+  const emit = defineEmits(['update:modelValue'])
+
+  const internalValue = computed({
+    get: () => props.modelValue,
+    set: val => val !== undefined && emit('update:modelValue', val)
+  })
 </script>
 
 <style scoped>
-.category-container {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-}
+  /* ── Sticky bar ── */
+  .category-bar {
+    position: sticky;
+    top: -16px;
+    z-index: 5;
+    margin: -16px -16px 0 -16px;
+    background: rgba(248, 250, 252, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid #e2e8f0;
+  }
 
-.cat-pill {
-  margin: 0 6px;
-  text-transform: none !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.3px;
-  border: 1px solid #e2e8f0 !important;
-  transition: all 0.2s ease;
-  height: 40px !important;
-}
+  /* ── Remove default slide-group padding ── */
+  :deep(.v-slide-group__content) {
+    padding: 2px 0;
+  }
 
-.cat-pill--active {
-  background-color: rgb(var(--v-theme-primary)) !important;
-  color: white !important;
-  border-color: transparent !important;
-  box-shadow: 0 4px 12px rgba(var(--v-theme-primary), 0.3) !important;
-}
+  /* ── Arrow buttons ── */
+  .arrow-btn {
+    border-radius: 50% !important;
+  }
+  :deep(.v-slide-group__prev),
+  :deep(.v-slide-group__next) {
+    min-width: 32px !important;
+    align-items: center;
+    justify-content: center;
+  }
 
-/* Remove default slide group padding */
-:deep(.v-slide-group__content) {
-  padding: 8px 12px;
-}
+  /* ── Chip base ── */
+  .cat-chip {
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    letter-spacing: 0 !important;
+    transition: all 0.18s ease !important;
+    border-color: #e2e8f0 !important;
+    color: #64748b !important;
+  }
+  .cat-chip:hover:not(.cat-chip--active) {
+    border-color: rgb(var(--v-theme-primary)) !important;
+    color: rgb(var(--v-theme-primary)) !important;
+    transform: translateY(-1px);
+  }
+
+  /* ── Active chip ── */
+  .cat-chip--active {
+    color: white !important;
+    box-shadow: 0 3px 10px rgba(var(--v-theme-primary), 0.35) !important;
+  }
+
 </style>

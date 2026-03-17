@@ -1,43 +1,6 @@
 <template>
   <div class="pos-products-view">
-    <!-- Category filter -->
-    <div class="sticky-category-wrapper px-3">
-      <v-slide-group
-        v-model="selectedCategory"
-        mandatory
-        show-arrows
-        class="category-slider"
-      >
-        <v-slide-group-item value="all" v-slot="{ isSelected, toggle }">
-          <v-btn
-            :color="isSelected ? 'primary' : 'white'"
-            :variant="isSelected ? 'elevated' : 'flat'"
-            class="ma-2 text-none font-weight-bold px-6 border"
-            rounded="lg"
-            @click="toggle"
-          >
-            {{ t('product.all_product') }}
-          </v-btn>
-        </v-slide-group-item>
-        <v-slide-group-item
-          v-for="cat in categories"
-          :key="cat.id"
-          :value="cat.id"
-          v-slot="{ isSelected, toggle }"
-        >
-          <v-btn
-            :color="isSelected ? 'primary' : 'white'"
-            :variant="isSelected ? 'elevated' : 'flat'"
-            class="ma-2 text-none font-weight-bold px-6 border"
-            rounded="lg"
-            @click="toggle"
-          >
-            {{ cat.name }}
-          </v-btn>
-        </v-slide-group-item>
-      </v-slide-group>
-    </div>
-
+    <CategorySlider v-model="selectedCategory" :categories="categories" />
     <v-row class="mt-2" dense>
       <!-- Skeleton -->
       <template v-if="isLoading">
@@ -202,7 +165,7 @@
   import { useLoadingStore } from '@/stores/loadingStore'
   import { useAuthStore } from '@/stores/authStore'
   import ProductUnitPicker from '@/components/mart/ProductUnitPicker.vue'
-  // import CategorySlider from '@/components/mart/CategorySlider.vue'
+  import CategorySlider from '@/components/mart/CategorySlider.vue'
   import { useI18n } from 'vue-i18n'
   import { formatKHR } from '@nong-official-dev/core'
   const { t } = useI18n()
@@ -291,17 +254,6 @@
 <style scoped>
   .pos-products-view {
     position: relative;
-  }
-
-  /* ── Sticky category bar ── */
-  .sticky-category-wrapper {
-    position: sticky;
-    top: -16px;
-    z-index: 5;
-    margin: -16px -16px 0 -16px;
-    background: rgba(248, 250, 252, 0.92) !important;
-    backdrop-filter: blur(8px);
-    border-bottom: 1px solid #e2e8f0;
   }
   /* ── Card ── */
   .product-card {
