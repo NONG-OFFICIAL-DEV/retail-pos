@@ -3,7 +3,7 @@
     <v-slide-group
       v-model="internalValue"
       mandatory
-      show-arrows="always"
+      show-arrows
       class="category-slide-group py-1"
     >
       <!-- Arrow overrides -->
