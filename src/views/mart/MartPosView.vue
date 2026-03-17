@@ -202,6 +202,7 @@
   import { useLoadingStore } from '@/stores/loadingStore'
   import { useAuthStore } from '@/stores/authStore'
   import ProductUnitPicker from '@/components/mart/ProductUnitPicker.vue'
+  // import CategorySlider from '@/components/mart/CategorySlider.vue'
   import { useI18n } from 'vue-i18n'
   import { formatKHR } from '@nong-official-dev/core'
   const { t } = useI18n()
@@ -220,7 +221,7 @@
   const customerType = ref('retail')
 
   const categories = computed(() => categoryStore.categories?.data ?? [])
-  const isLoading = computed(() => loadingStore.isLoading)
+  const isLoading = ref(false)
 
   const products = computed(() => {
     let list = productStore.products ?? []
@@ -278,13 +279,12 @@
   }
 
   onMounted(async () => {
+    isLoading.value = true
     await Promise.all([
-      productStore.fetchProducts(
-        { branch_id: authStore.branch_id },
-        { loading: 'skeleton' }
-      ),
-      categoryStore.fetchCategories({}, { loading: 'skeleton' })
+      productStore.fetchProducts({ branch_id: authStore.branch_id }),
+      categoryStore.fetchCategories()
     ])
+    isLoading.value = false
   })
 </script>
 
@@ -303,7 +303,6 @@
     backdrop-filter: blur(8px);
     border-bottom: 1px solid #e2e8f0;
   }
-
   /* ── Card ── */
   .product-card {
     cursor: pointer;

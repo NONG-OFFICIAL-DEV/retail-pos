@@ -6,6 +6,7 @@
     <!-- ── Cart Drawer ──────────────────────────────────────────────────────── -->
     <MartCartDrawer
       :cart="cart"
+      :loading="cart.loading"
       @update-qty="updateQty"
       @remove="removeItem"
       @clear="clearCart"

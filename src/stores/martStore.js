@@ -108,7 +108,7 @@ export const useMartStore = defineStore('mart', {
 
         this.clearCart()
         notif('Order placed successfully', { type: 'success' })
-        productStore.fetchProducts()
+        productStore.fetchProducts({ branch_id: auth.branch_id })
         return true
       } catch (err) {
         console.error('[mart:checkout]', err)
