@@ -146,7 +146,6 @@
         </v-card>
       </v-col>
     </v-row>
-
     <!-- Unit Picker Dialog -->
     <ProductUnitPicker
       v-model="pickerDialog"
@@ -183,7 +182,7 @@
   const pickerProduct = ref(null)
   const customerType = ref('retail')
 
-  const categories = computed(() => categoryStore.categories?.data ?? [])
+  const categories = computed(() => categoryStore.categories ?? [])
   const isLoading = ref(false)
 
   const products = computed(() => {
@@ -245,7 +244,7 @@
     isLoading.value = true
     await Promise.all([
       productStore.fetchProducts({ branch_id: authStore.branch_id }),
-      categoryStore.fetchCategories()
+      categoryStore.fetchCategories({ branch_id: authStore.branch_id })
     ])
     isLoading.value = false
   })
