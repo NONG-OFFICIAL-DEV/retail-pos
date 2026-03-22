@@ -78,23 +78,22 @@ export const useMartStore = defineStore('mart', {
     },
 
     // ── Checkout ───────────────────────────────────────────────────────────
-    async checkout(notif) {
+    async checkout() {
       const auth = useAuthStore()
       const orderStore = useOrderStore()
       const productStore = useProductStore()
 
       if (!this.cartItems.length) {
-        notif('Cart is empty', { type: 'warning' })
-        return false
+        throw new Error('Cart is empty')
       }
+
       if (!auth.branch_id) {
-        notif('No branch assigned', { type: 'error' })
-        return false
+        throw new Error('No branch assigned')
       }
 
       this.loading = true
       try {
-        await orderStore.createOrder({
+        const data = await orderStore.createOrder({
           branch_id: auth.branch_id,
           payment_method: this.paymentMethod,
           order_type: 'takeaway',
@@ -105,15 +104,9 @@ export const useMartStore = defineStore('mart', {
             quantity: i.qty
           }))
         })
-
         this.clearCart()
-        notif('Order placed successfully', { type: 'success' })
         productStore.fetchProducts({ branch_id: auth.branch_id })
-        return true
-      } catch (err) {
-        console.error('[mart:checkout]', err)
-        notif('Checkout failed. Please try again.', { type: 'error' })
-        return false
+        return data
       } finally {
         this.loading = false
       }

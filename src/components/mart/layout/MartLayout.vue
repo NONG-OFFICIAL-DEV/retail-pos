@@ -10,7 +10,7 @@
       @update-qty="updateQty"
       @remove="removeItem"
       @clear="clearCart"
-      @checkout="checkout"
+      @checkout="completeOrder"
       @set-payment="setPayment"
     />
 
@@ -22,6 +22,7 @@
         </div>
       </v-container>
     </v-main>
+    <!-- <ReceiptPrint v-if="receipt" :receipt="receipt" /> -->
 
     <!-- ── Footer ───────────────────────────────────────────────────────────── -->
     <MartFooter />
@@ -29,11 +30,48 @@
 </template>
 
 <script setup>
-  import { ref } from 'vue'
+  import { ref, nextTick } from 'vue'
   import { useMartPos } from '@/composables/useMartPos'
   import MartAppBar from '@/components/mart/layout/MartAppBar.vue'
   import MartCartDrawer from '@/components/mart/layout/MartCartDrawer.vue'
   import MartFooter from '@/components/mart/layout/MartFooter.vue'
+  import ReceiptPrint from '@/components/receipt/ReceiptPrint.vue'
+  import { useAuthStore } from '@/stores/authStore'
+  import { useRouter } from 'vue-router'
+  import { useMartStore } from '@/stores/martStore'
+  import { useAppUtils } from '@/composables/useAppUtils'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
+  const { notif } = useAppUtils()
+  import { printReceipt } from '@/utils/printReceipt'
+
+  const martStore = useMartStore()
+  const authStore = useAuthStore()
+  const router = useRouter()
+  const receipt = ref(null)
+
+  const logout = async () => {
+    await authStore.logout()
+    router.push({ name: 'Login' })
+  }
+
+  const completeOrder = async () => {
+    try {
+      const data = await martStore.checkout()
+
+      receipt.value = data.receipt
+
+      notif('Order placed successfully', { type: 'success' }) // ✅ moved here
+
+      await nextTick()
+      printReceipt(data.receipt)
+      // receipt.value = null
+    } catch (err) {
+      console.error(err)
+
+      notif(err.message || 'Checkout failed', { type: 'error' }) // ✅ handle error here
+    }
+  }
 
   const search = ref('')
 
@@ -44,8 +82,7 @@
     removeItem,
     clearCart,
     setPayment,
-    checkout,
-    logout
+    checkout
   } = useMartPos()
 </script>
 

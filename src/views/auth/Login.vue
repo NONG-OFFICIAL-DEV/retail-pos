@@ -6,6 +6,7 @@
   import { useI18n } from 'vue-i18n'
   const { t } = useI18n()
   const { notif } = useAppUtils()
+  const loading = ref(false)
   const email = ref('')
   const password = ref('')
   const store = useAuthStore()
@@ -17,6 +18,7 @@
   })
   const visible = ref(false)
   const login = async () => {
+    loading.value = true
     // clear previous errors
     errors.email = ''
     errors.password = ''
@@ -31,11 +33,12 @@
       if (success) {
         router.push('/mart')
 
-        notif(t('messages.login_sucess'), {
+        notif(t('messages.login_success'), {
           type: 'success',
           color: 'primary'
         })
       }
+      loading.value = false
     } catch (err) {
       const res = err.response?.data
       if (res?.status === 'validation_error') {
@@ -46,6 +49,7 @@
         // console.log(res.status == 'invalid_credentials')
         errors.general = res.message
       }
+      loading.value = false
     }
   }
 </script>

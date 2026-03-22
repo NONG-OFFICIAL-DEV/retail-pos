@@ -69,7 +69,8 @@
     "wating": "Your order has been sent to the kitchen.",
     "ready": "We'll notify you when it's ready.",
     "clear": "Cart cleared",
-    "tableSelected": "Table {tableNumber} selected successfully"
+    "tableSelected": "Table {tableNumber} selected successfully",
+    "login_success":"login successfully"
   },
   "header": {
     "orderTitle": "My Orders",

@@ -1,6 +1,5 @@
 // composables/useMartPos.js
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import { useMartStore } from '@/stores/martStore'
 import { useAppUtils } from '@/composables/useAppUtils'
@@ -8,7 +7,6 @@ import { useAppUtils } from '@/composables/useAppUtils'
 export function useMartPos() {
   const auth = useAuthStore()
   const mart = useMartStore()
-  const router = useRouter()
   const { notif } = useAppUtils()
 
   const operator = computed(() => ({
@@ -40,11 +38,8 @@ export function useMartPos() {
   const removeItem = key => mart.removeFromCart(key) // ← item.id
   const clearCart = () => mart.clearCart()
   const setPayment = method => mart.setPaymentMethod(method)
-  const checkout = () => mart.checkout(notif)
-
-  const logout = async () => {
-    await auth.logout()
-    router.push({ name: 'Login' })
+  const checkout = async () => {
+    await mart.checkout(notif)
   }
 
   return {
@@ -55,8 +50,7 @@ export function useMartPos() {
     removeItem,
     clearCart,
     setPayment,
-    checkout,
-    logout
+    checkout
   }
 }
 
