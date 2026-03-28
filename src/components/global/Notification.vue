@@ -6,7 +6,7 @@
       v-model="alert.visible"
       :timeout="alert.timeout || defaultTimeout"
       location="top"
-      rounded="pill"
+      rounded="lg"
       elevation="0"
       class="snackbar-item"
       @update:model-value="val => !val && closeAlert(alert.id)"

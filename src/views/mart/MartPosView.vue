@@ -165,9 +165,11 @@
   import { useAuthStore } from '@/stores/authStore'
   import ProductUnitPicker from '@/components/mart/ProductUnitPicker.vue'
   import CategorySlider from '@/components/mart/CategorySlider.vue'
-  import { useI18n } from 'vue-i18n'
   import { formatKHR } from '@nong-official-dev/core'
+  import { useAppUtils } from '@/composables/useAppUtils'
+  import { useI18n } from 'vue-i18n'
   const { t } = useI18n()
+  const { notif } = useAppUtils()
 
   const props = defineProps({ search: { type: String, default: '' } })
 
@@ -237,6 +239,10 @@
       qty_per_base: payload.qty_per_base,
       image_url: payload.image_url,
       qty: payload.quantity
+    })
+    notif(t('notification.addedToCart'), {
+      type: 'success',
+      color: 'primary'
     })
   }
 
