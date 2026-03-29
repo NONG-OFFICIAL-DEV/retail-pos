@@ -78,7 +78,7 @@ export const useMartStore = defineStore('mart', {
     },
 
     // ── Checkout ───────────────────────────────────────────────────────────
-    async checkout() {
+    async checkout(extraPayload = {}) {
       const auth = useAuthStore()
       const orderStore = useOrderStore()
       const productStore = useProductStore()
@@ -98,6 +98,8 @@ export const useMartStore = defineStore('mart', {
           payment_method: this.paymentMethod,
           order_type: 'takeaway',
           discount_amount: this.discount,
+          cash_tendered: extraPayload.cash_tendered ?? 0,
+          change_given: extraPayload.change_given ?? 0,
           items: this.cartItems.map(i => ({
             product_id: i.id,
             product_unit_id: i.product_unit_id ?? null, // ← send unit to backend

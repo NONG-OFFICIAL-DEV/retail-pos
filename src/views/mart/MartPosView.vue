@@ -161,7 +161,6 @@
   import { useProductStore } from '@/stores/productStore'
   import { useCategoryStore } from '@/stores/categoryStore'
   import { useMartStore } from '@/stores/martStore'
-  import { useLoadingStore } from '@/stores/loadingStore'
   import { useAuthStore } from '@/stores/authStore'
   import ProductUnitPicker from '@/components/mart/ProductUnitPicker.vue'
   import CategorySlider from '@/components/mart/CategorySlider.vue'
@@ -176,7 +175,6 @@
   const productStore = useProductStore()
   const categoryStore = useCategoryStore()
   const martStore = useMartStore()
-  const loadingStore = useLoadingStore()
   const authStore = useAuthStore()
 
   const selectedCategory = ref('all')

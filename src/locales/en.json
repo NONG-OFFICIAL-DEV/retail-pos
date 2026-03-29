@@ -56,14 +56,24 @@
     "wating": "Your order has been sent to the kitchen.",
     "ready": "We'll notify you when it's ready.",
     "clear": "Cart cleared",
-    "login_success":"login successfully"
+    "login_success": "login successfully"
   },
   "banner": {
     "todaySpecial": "Today's Special",
     "orderByPhone": "Order dishes and drinks using your phone",
     "newDishes": "New Dishes"
   },
-  "product":{
-    "all_product":"All Product"
+  "orders": {
+    "current_order": "Current Order",
+    "cash": "Cash",
+    "card": "Card",
+    "qr": "QR Code",
+    "cash_payment": "Cash Payment",
+    "enter_amount_received": "Enter the amount received from customer.",
+    "cash_received": "Cash Received",
+    "change": "Change"
+  },
+  "product": {
+    "all_product": "All Product"
   }
 }

@@ -13,7 +13,6 @@
       @checkout="completeOrder"
       @set-payment="setPayment"
     />
-
     <!-- ── Main Content ─────────────────────────────────────────────────────── -->
     <v-main>
       <v-container fluid class="pa-0">
@@ -23,7 +22,13 @@
       </v-container>
     </v-main>
     <!-- <ReceiptPrint v-if="receipt" :receipt="receipt" /> -->
-
+    <CashPaymentDialog
+      v-model="cashDialog"
+      :total="cart.total"
+      :loading="cart.loading"
+      @confirm="confirmCashPayment"
+      @cancel="cashDialog = false"
+    />
     <!-- ── Footer ───────────────────────────────────────────────────────────── -->
     <MartFooter />
   </v-app>
@@ -36,6 +41,7 @@
   import MartCartDrawer from '@/components/mart/layout/MartCartDrawer.vue'
   import MartFooter from '@/components/mart/layout/MartFooter.vue'
   import ReceiptPrint from '@/components/receipt/ReceiptPrint.vue'
+  import CashPaymentDialog from '@/components/mart/CashPaymentDialog.vue'
   import { useAuthStore } from '@/stores/authStore'
   import { useRouter } from 'vue-router'
   import { useMartStore } from '@/stores/martStore'
@@ -49,15 +55,16 @@
   const authStore = useAuthStore()
   const router = useRouter()
   const receipt = ref(null)
+  const cashDialog = ref(false)
 
   const logout = async () => {
     await authStore.logout()
     router.push({ name: 'Login' })
   }
 
-  const completeOrder = async () => {
+  const processCheckout = async (extraPayload = {}) => {
     try {
-      const data = await martStore.checkout()
+      const data = await martStore.checkout(extraPayload)
 
       receipt.value = data.receipt
 
@@ -73,17 +80,26 @@
     }
   }
 
+  const completeOrder = async () => {
+    if (cart.value?.paymentMethod === 'cash') {
+      cashDialog.value = true
+      return
+    }
+    await processCheckout()
+  }
+
+  const confirmCashPayment = async ({ cash_received, change }) => {
+    cashDialog.value = false
+    await processCheckout({
+      cash_tendered: cash_received, // ← matches backend field
+      change_given: change // ← matches backend field
+    })
+  }
+
   const search = ref('')
 
-  const {
-    operator,
-    cart,
-    updateQty,
-    removeItem,
-    clearCart,
-    setPayment,
-    checkout
-  } = useMartPos()
+  const { operator, cart, updateQty, removeItem, clearCart, setPayment } =
+    useMartPos()
 </script>
 
 <style scoped>
