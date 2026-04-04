@@ -1,44 +1,34 @@
 {
   "btn": {
-    "filter": "Filter",
-    "reFilter": "Clear Search",
     "done": "Done",
     "yes": "Yes",
     "save": "Save",
     "cancel": "Cancel",
-    "edit": "Edit",
-    "delete": "Delete",
     "order": "Order",
-    "addToCart": "Add to Cart",
-    "placeOrder": "Place Order",
+    "add_to_cart": "Add to Cart",
     "back": "Back",
     "next": "Next",
     "confirm": "Confirm",
-    "yourOrder": "Your Order",
-    "orderMore": "Order More",
-    "viewHistory": "View All Placed Orders"
+    "pay": "Pay"
+
   },
   "common": {
-    "selectLanguage": "Select Language",
     "search": "Search dishes, drinks...",
-    "menu": "Menu",
-    "cart": "Cart",
     "total": "Total",
     "quantity": "Quantity",
     "price": "Price",
     "items": "Items",
     "emptyCart": "Your cart is empty",
-    "all": "All",
     "scan": "Scan the menu and place your first order.",
-    "orderedItems": "Ordered Items",
     "date": "Date",
     "discount": "Discount",
     "subtotal": "Subtotal",
-    "orderId": "Order ID",
-    "orderqId": "Order ID",
-    "dishes": "Dishes",
     "grand_total": "Grand Total",
-    "from": "From"
+    "from": "From",
+    "pcs": "e.g., no chili, no sugar, extra sauce...",
+    "available": "Available",
+    "max": "Maximum",
+    "add_disscount_coupon": "Add Discount Coupon"
   },
   "lang": {
     "km": "Khmer",
@@ -58,10 +48,12 @@
     "clear": "Cart cleared",
     "login_success": "login successfully"
   },
-  "banner": {
-    "todaySpecial": "Today's Special",
-    "orderByPhone": "Order dishes and drinks using your phone",
-    "newDishes": "New Dishes"
+  "unit": {
+    "customer_type": "Customer Type",
+    "select_unit": "Select Unit",
+    "base_unit": "Base Unit",
+    "retail": "Retail",
+    "wholsale": "Wholesale"
   },
   "orders": {
     "current_order": "Current Order",
