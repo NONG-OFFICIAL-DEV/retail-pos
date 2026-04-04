@@ -58,7 +58,7 @@
           class="mb-4"
           icon="mdi-alert-outline"
         >
-          Only
+        {{ t('common.only') }}
           <strong>
             {{ fmtQty(product.stock_quantity) }} {{ product.unit ?? 'pcs' }}
           </strong>
@@ -191,7 +191,7 @@
                     rounded="lg"
                     class="mt-1"
                   >
-                    Out of stock
+                    {{ t('common.out_of_stock') }}
                   </v-chip>
                 </div>
               </div>
@@ -244,7 +244,7 @@
               class="text-caption text-error mt-2"
             >
               <v-icon icon="mdi-alert-circle-outline" size="13" class="mr-1" />
-              Only {{ maxForUnit(selectedUnit) }}
+              {{ t('common.only') }} {{ maxForUnit(selectedUnit) }}
               {{ selectedUnit.unit_label ?? selectedUnit.unit_name }} {{ t('common.available') }}
             </div>
           </div>
@@ -319,10 +319,10 @@
     return 'mdi-check-circle'
   })
   const stockLabel = computed(() => {
-    if (isOutOfStock.value) return 'Out of stock'
+    if (isOutOfStock.value) return t('common.out_of_stock')
     if (isLowStock.value)
-      return `Low stock · ${fmtQty(stockQty.value)} ${props.product?.unit ?? 'pcs'} left`
-    return `In stock · ${fmtQty(stockQty.value)} ${props.product?.unit ?? 'pcs'}`
+      return t('common.low_stock', { qty: fmtQty(stockQty.value), unit: props.product?.unit ?? 'pcs' })
+    return t('common.in_stock', { qty: fmtQty(stockQty.value), unit: props.product?.unit ?? 'pcs' })
   })
 
   // Max qty available when no units

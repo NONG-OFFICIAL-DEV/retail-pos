@@ -9,7 +9,8 @@
     "back": "Back",
     "next": "Next",
     "confirm": "Confirm",
-    "pay": "Pay"
+    "pay": "Pay",
+    "delete": "Delete"
 
   },
   "common": {
@@ -28,7 +29,11 @@
     "pcs": "e.g., no chili, no sugar, extra sauce...",
     "available": "Available",
     "max": "Maximum",
-    "add_disscount_coupon": "Add Discount Coupon"
+    "add_disscount_coupon": "Add Discount Coupon",
+    "only": "Only",
+    "out_of_stock": "Out of Stock",
+    "low_stock": "Low stock · {qty} {unit} left",
+    "in_stock": "In stock · {qty} {unit}"
   },
   "lang": {
     "km": "Khmer",
