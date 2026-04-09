@@ -4,10 +4,11 @@ const routes = [
   {
     path: '/',
     name: 'Login',
-    component: () => import('@/views/auth/Login.vue')
+    component: () => import('@/views/auth/LoginPage.vue')
   },
   {
     path: '/mart',
+    name: 'Mart',
     component: () => import('@/components/mart/layout/MartLayout.vue'),
     meta: { requiresAuth: true },
     children: [
