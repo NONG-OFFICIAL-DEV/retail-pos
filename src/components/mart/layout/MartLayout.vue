@@ -13,6 +13,7 @@
       @checkout="completeOrder"
       @set-payment="setPayment"
     />
+
     <!-- ── Main Content ─────────────────────────────────────────────────────── -->
     <v-main>
       <v-container fluid class="pa-0">
@@ -21,7 +22,7 @@
         </div>
       </v-container>
     </v-main>
-    <!-- <ReceiptPrint v-if="receipt" :receipt="receipt" /> -->
+
     <CashPaymentDialog
       v-model="cashDialog"
       :total="cart.total"
@@ -29,6 +30,46 @@
       @confirm="confirmCashPayment"
       @cancel="cashDialog = false"
     />
+
+    <!-- ── Print Receipt Dialog (shown after checkout) ──────────────────────── -->
+    <v-dialog v-model="printDialog" max-width="320" persistent>
+      <v-card rounded="lg" class="pa-2">
+        <v-card-title class="text-center pt-4">
+          <v-icon size="40" color="success">mdi-check-circle</v-icon>
+          <div class="mt-2 text-h6">Order Placed!</div>
+        </v-card-title>
+
+        <v-card-text class="text-center text-body-2 text-grey-darken-1">
+          Order <strong>#{{ receipt?.order_number }}</strong> — Total
+          <strong>${{ parseFloat(receipt?.total ?? 0).toFixed(2) }}</strong>
+        </v-card-text>
+
+        <v-card-actions class="flex-column ga-2 px-4 pb-4">
+          <!-- 🖨️ This button is a direct user tap → share sheet works! -->
+          <v-btn
+            block
+            color="primary"
+            variant="flat"
+            rounded="lg"
+            :loading="printing"
+            prepend-icon="mdi-printer"
+            @click="handlePrint"
+          >
+            Print Receipt
+          </v-btn>
+
+          <v-btn
+            block
+            variant="tonal"
+            rounded="lg"
+            @click="closePrintDialog"
+          >
+            Skip
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <!-- ── Footer ───────────────────────────────────────────────────────────── -->
     <MartFooter />
   </v-app>
@@ -40,7 +81,6 @@
   import MartAppBar from '@/components/mart/layout/MartAppBar.vue'
   import MartCartDrawer from '@/components/mart/layout/MartCartDrawer.vue'
   import MartFooter from '@/components/mart/layout/MartFooter.vue'
-  import ReceiptPrint from '@/components/receipt/ReceiptPrint.vue'
   import CashPaymentDialog from '@/components/mart/CashPaymentDialog.vue'
   import { useAuthStore } from '@/stores/authStore'
   import { useRouter } from 'vue-router'
@@ -48,16 +88,18 @@
   import { useAppUtils } from '@/composables/useAppUtils'
   import { useI18n } from 'vue-i18n'
   import { useReceipt } from '@/utils/printReceipt'
+
   const { t } = useI18n()
   const { notif } = useAppUtils()
-
   const { printing, print } = useReceipt()
 
   const martStore = useMartStore()
   const authStore = useAuthStore()
   const router = useRouter()
-  const receipt = ref(null)
+
+  const receipt    = ref(null)
   const cashDialog = ref(false)
+  const printDialog = ref(false)  // ← new: controls print receipt dialog
 
   const logout = async () => {
     await authStore.logout()
@@ -69,17 +111,29 @@
       const data = await martStore.checkout(extraPayload)
 
       receipt.value = data.receipt
+      notif('Order placed successfully', { type: 'success' })
 
-      notif('Order placed successfully', { type: 'success' }) // ✅ moved here
+      // ✅ Show print dialog instead of calling print() directly
+      // User will tap "Print Receipt" button → direct gesture → share works!
+      printDialog.value = true
 
-      await nextTick()
-      print(data.receipt)
-      // receipt.value = null
     } catch (err) {
       console.error(err)
-
-      notif(err.message || 'Checkout failed', { type: 'error' }) // ✅ handle error here
+      notif(err.message || 'Checkout failed', { type: 'error' })
     }
+  }
+
+  // ✅ Called directly from button tap — gesture is valid here
+  const handlePrint = () => {
+    print(receipt.value)
+    // Don't close dialog immediately — let user see it while share sheet is open
+    // It will close after they share or cancel
+    closePrintDialog()
+  }
+
+  const closePrintDialog = () => {
+    printDialog.value = false
+    receipt.value = null
   }
 
   const completeOrder = async () => {
@@ -93,8 +147,8 @@
   const confirmCashPayment = async ({ cash_received, change }) => {
     cashDialog.value = false
     await processCheckout({
-      cash_tendered: cash_received, // ← matches backend field
-      change_given: change // ← matches backend field
+      cash_tendered: cash_received,
+      change_given: change
     })
   }
 
@@ -106,7 +160,7 @@
 
 <style scoped>
   .mart-content {
-    height: calc(100vh - 60px - 32px); /* header - footer */
+    height: calc(100vh - 60px - 32px);
     overflow-y: auto;
     scroll-behavior: smooth;
     padding: 16px;
