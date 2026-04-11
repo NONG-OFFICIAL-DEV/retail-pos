@@ -58,4 +58,15 @@
   ::-webkit-scrollbar {
     display: none;
   }
+
+  .v-application {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  .v-main {
+    height: 100dvh !important;
+    overflow: hidden !important;
+  }
 </style>
