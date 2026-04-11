@@ -5,8 +5,8 @@
 //    Offline → serve from IndexedDB cache
 // ─────────────────────────────────────────────────────────────
 import { productDB, categoryDB } from './db'
-import { productService } from './productService'   // your existing service
-import categoryService from './categoryService'     // your existing service
+import { productService } from '../api/product'   // your existing service
+import categoryService from '../api/category'     // your existing service
 
 // ─────────────────────────────────────────────────────────────
 //  PRODUCTS

@@ -1,4 +1,4 @@
-import { useLoadingStore } from '@/stores/loadingStore'
+// import { useLoadingStore } from '@/stores/loadingStore'
 import axios from 'axios'
 
 const api = axios.create({
@@ -10,7 +10,7 @@ const api = axios.create({
 })
 
 // Get store instance
-const loadingStore = useLoadingStore()
+// const loadingStore = useLoadingStore()
 // Request Interceptor
 api.interceptors.request.use(async config => {
   // const loaderType = config.meta?.loader || 'overlay'

@@ -1,6 +1,21 @@
 <template>
   <div class="pos-products-view">
+    <!-- Offline / cache notice -->
+    <v-alert
+      v-if="productStore.fromCache || categoryStore.fromCache"
+      type="info"
+      variant="tonal"
+      density="compact"
+      rounded="lg"
+      icon="mdi-database-outline"
+      class="mb-2 text-caption"
+      closable
+    >
+      Showing cached products. Prices and stock may not be current.
+    </v-alert>
+
     <CategorySlider v-model="selectedCategory" :categories="categories" />
+
     <v-row class="mt-2" dense>
       <!-- Skeleton -->
       <template v-if="isLoading">
@@ -20,6 +35,17 @@
         <p class="text-caption text-grey">
           Try adjusting your search or category
         </p>
+        <!-- Prompt to go online if cache is empty -->
+        <v-btn
+          v-if="!isOnline"
+          variant="tonal"
+          color="warning"
+          size="small"
+          class="mt-3"
+          prepend-icon="mdi-wifi-off"
+        >
+          Connect to internet to load products
+        </v-btn>
       </v-col>
 
       <!-- Product cards -->
@@ -40,12 +66,11 @@
           :ripple="!isOutOfStock(product)"
           @click="isOutOfStock(product) ? null : openPicker(product)"
         >
-          <!-- ── Image area ─────────────────────────────────────────────── -->
+          <!-- ── Image area ────────────────────────────────────── -->
           <div
             class="product-img-wrap"
             :class="{ 'img-out': isOutOfStock(product) }"
           >
-            <!-- Image with fallback -->
             <div v-if="product.image_url" class="product-img">
               <img
                 :src="product.image_url"
@@ -55,7 +80,6 @@
               />
             </div>
 
-            <!-- Fallback placeholder when no image -->
             <div v-else class="product-img product-img--placeholder">
               <div class="placeholder-initial">
                 {{ product.name?.charAt(0)?.toUpperCase() }}
@@ -78,7 +102,7 @@
               </div>
             </div>
 
-            <!-- Low stock badge (top right) -->
+            <!-- Low stock badge -->
             <v-chip
               v-else-if="isLowStock(product)"
               size="x-small"
@@ -91,7 +115,7 @@
               Low
             </v-chip>
 
-            <!-- Stock qty badge (bottom left) -->
+            <!-- Stock qty badge -->
             <v-chip
               size="x-small"
               variant="flat"
@@ -103,13 +127,12 @@
             </v-chip>
           </div>
 
-          <!-- ── Info area ──────────────────────────────────────────────── -->
+          <!-- ── Info area ──────────────────────────────────────── -->
           <v-card-text class="pa-2 pt-2">
             <div class="product-name text-body-2 font-weight-bold mb-1">
               {{ product.name }}
             </div>
 
-            <!-- Price -->
             <div
               v-if="product.active_units?.length"
               class="text-caption text-primary font-weight-black"
@@ -120,7 +143,6 @@
               {{ formatKHR(product.selling_price ?? product.base_price) }}
             </div>
 
-            <!-- Unit chips -->
             <div class="d-flex gap-1 flex-wrap mt-1">
               <v-chip
                 v-for="u in product.active_units?.slice(0, 2)"
@@ -146,6 +168,7 @@
         </v-card>
       </v-col>
     </v-row>
+
     <!-- Unit Picker Dialog -->
     <ProductUnitPicker
       v-model="pickerDialog"
@@ -162,13 +185,16 @@
   import { useCategoryStore } from '@/stores/categoryStore'
   import { useMartStore } from '@/stores/martStore'
   import { useAuthStore } from '@/stores/authStore'
+  import { useOffline } from '@/composables/useOffline'
   import ProductUnitPicker from '@/components/mart/ProductUnitPicker.vue'
   import CategorySlider from '@/components/mart/CategorySlider.vue'
   import { formatKHR } from '@nong-official-dev/core'
   import { useAppUtils } from '@/composables/useAppUtils'
   import { useI18n } from 'vue-i18n'
+
   const { t } = useI18n()
   const { notif } = useAppUtils()
+  const { isOnline } = useOffline()
 
   const props = defineProps({ search: { type: String, default: '' } })
 
@@ -183,7 +209,12 @@
   const customerType = ref('retail')
 
   const categories = computed(() => categoryStore.categories ?? [])
-  const isLoading = ref(false)
+
+  // Use store's isLoading instead of local ref
+  // so both product + category loading are tracked
+  const isLoading = computed(
+    () => productStore.isLoading || categoryStore.isLoading
+  )
 
   const products = computed(() => {
     let list = productStore.products ?? []
@@ -198,6 +229,7 @@
 
   const isEmpty = computed(() => !products.value.length && !isLoading.value)
 
+  // ── Stock helpers (unchanged) ─────────────────────────────────
   const isOutOfStock = p => parseFloat(p.stock_quantity) <= 0
   const isLowStock = p =>
     p.reorder_level != null &&
@@ -218,6 +250,7 @@
   const minPrice = product =>
     Math.min(...product.active_units.map(u => parseFloat(u.retail_price)))
 
+  // ── Picker (unchanged) ────────────────────────────────────────
   const openPicker = product => {
     if (!product.active_units?.length) {
       martStore.addToCart({ ...product, quantity: 1 })
@@ -238,19 +271,17 @@
       image_url: payload.image_url,
       qty: payload.quantity
     })
-    notif(t('notification.addedToCart'), {
-      type: 'success',
-      color: 'primary'
-    })
+    notif(t('notification.addedToCart'), { type: 'success', color: 'primary' })
   }
 
+  // ── Load — works online AND offline ──────────────────────────
+  // The stores now use offlineProductService / offlineCategoryService
+  // which automatically fall back to IndexedDB when offline
   onMounted(async () => {
-    isLoading.value = true
     await Promise.all([
       productStore.fetchProducts({ branch_id: authStore.branch_id }),
       categoryStore.fetchCategories({ branch_id: authStore.branch_id })
     ])
-    isLoading.value = false
   })
 </script>
 
@@ -258,6 +289,7 @@
   .pos-products-view {
     position: relative;
   }
+
   /* ── Card ── */
   .product-card {
     cursor: pointer;
@@ -285,7 +317,7 @@
   .product-img-wrap {
     position: relative;
     width: 100%;
-    aspect-ratio: 1 / 1; /* perfect square, works for any card width */
+    aspect-ratio: 1 / 1;
     overflow: hidden;
     background: #f8fafc;
   }
@@ -293,7 +325,6 @@
     filter: grayscale(55%);
   }
 
-  /* Real image */
   .product-img {
     width: 100%;
     height: 100%;
@@ -301,16 +332,15 @@
   .product-img__img {
     width: 100%;
     height: 100%;
-    object-fit: cover; /* fills the square, crops sides if needed */
+    object-fit: cover;
     object-position: center;
     display: block;
     transition: transform 0.2s ease;
   }
   .product-card:not(.product-card--disabled):hover .product-img__img {
-    transform: scale(1.04); /* subtle zoom on hover */
+    transform: scale(1.04);
   }
 
-  /* Placeholder when no image */
   .product-img--placeholder {
     display: flex;
     flex-direction: column;

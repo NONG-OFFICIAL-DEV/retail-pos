@@ -11,6 +11,18 @@
           <div class="text-body-2 text-medium-emphasis mt-1">
             Sign in to continue
           </div>
+
+          <!-- Offline notice on login screen -->
+          <v-chip
+            v-if="!isOnline"
+            color="warning"
+            variant="tonal"
+            size="small"
+            prepend-icon="mdi-wifi-off"
+            class="mt-2"
+          >
+            Offline — PIN only
+          </v-chip>
         </div>
 
         <!-- Tabs -->
@@ -19,7 +31,8 @@
             <v-icon start>mdi-dialpad</v-icon>
             PIN
           </v-tab>
-          <v-tab value="email">
+          <!-- Hide email tab when offline (needs server) -->
+          <v-tab value="email" :disabled="!isOnline">
             <v-icon start>mdi-email-outline</v-icon>
             Email
           </v-tab>
@@ -28,14 +41,14 @@
         <v-divider />
 
         <v-card-text class="px-6 pt-4 pb-6">
-          <!-- ── Email Login ─────────────────────────────────────── -->
           <v-window v-model="tab">
+            <!-- ── Email Login ─────────────────────────────────── -->
             <v-window-item value="email">
               <v-form
                 ref="emailForm"
                 class="py-4"
-                @submit.prevent="submitEmail"
                 v-model="emailValid"
+                @submit.prevent="submitEmail"
               >
                 <v-text-field
                   v-model="email"
@@ -55,11 +68,11 @@
                   :type="showPw ? 'text' : 'password'"
                   prepend-inner-icon="mdi-lock-outline"
                   :append-inner-icon="showPw ? 'mdi-eye-off' : 'mdi-eye'"
-                  @click:append-inner="showPw = !showPw"
                   variant="outlined"
                   density="comfortable"
                   :rules="[rules.required]"
                   class="mb-4"
+                  @click:append-inner="showPw = !showPw"
                 />
 
                 <v-alert
@@ -88,10 +101,10 @@
               </v-form>
             </v-window-item>
 
-            <!-- ── PIN Login ──────────────────────────────────────── -->
+            <!-- ── PIN Login ───────────────────────────────────── -->
             <v-window-item value="pin">
               <div class="text-center">
-                <!-- PIN dots display -->
+                <!-- PIN dots -->
                 <div
                   class="pin-dots d-flex justify-center align-center gap-3 my-4"
                 >
@@ -138,8 +151,8 @@
                     :class="{ 'pin-key--ghost': key === '' }"
                     variant="tonal"
                     rounded="lg"
-                    @click="pinPress(key)"
                     :loading="key === '0' && loading"
+                    @click="pinPress(key)"
                   >
                     <template v-if="key === '⌫'">
                       <v-icon>mdi-backspace-outline</v-icon>
@@ -150,7 +163,6 @@
                   </v-btn>
                 </div>
 
-                <!-- Submit -->
                 <v-btn
                   color="primary"
                   size="large"
@@ -177,16 +189,21 @@
   import { ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { useAuthStore } from '@/stores/authStore'
+  import { warmUpCache } from '@/services/offlineProductService'
+  import { useOffline } from '@/composables/useOffline'
 
   const router = useRouter()
   const authStore = useAuthStore()
 
-  // ── Shared ────────────────────────────────────────────────────────────────────
-  const tab = ref('pin') // default to PIN tab
+  // Know if we're online so we can disable email tab offline
+  const { isOnline } = useOffline()
+
+  // ── Shared ────────────────────────────────────────────────────
+  const tab = ref('pin')
   const loading = ref(false)
   const errorMsg = ref('')
 
-  // ── Email form ────────────────────────────────────────────────────────────────
+  // ── Email form ────────────────────────────────────────────────
   const emailForm = ref(null)
   const emailValid = ref(false)
   const email = ref('')
@@ -205,7 +222,12 @@
     loading.value = true
     errorMsg.value = ''
     try {
-      await authStore.login({ email: email.value, password: password.value }) // ← object, not two args
+      await authStore.login({ email: email.value, password: password.value })
+
+      // ← NEW: pre-cache products & categories in background after login
+      //   so the app works offline next time
+      warmUpCache().catch(console.error)
+
       router.push('/mart')
     } catch (err) {
       errorMsg.value =
@@ -217,22 +239,17 @@
     }
   }
 
-  // ── PIN pad ───────────────────────────────────────────────────────────────────
+  // ── PIN pad ───────────────────────────────────────────────────
   const pin = ref('')
-
-  // Optionally pass branch_id from route query or store:
-  // const branchId = route.query.branch_id ?? null
-  const branchId = null
+  const branchId = null // set from route.query.branch_id if needed
 
   function pinPress(key) {
     if (key === '⌫') {
       pin.value = pin.value.slice(0, -1)
       return
     }
-    if (pin.value.length >= 4) return // max 4 digits shown; adjust to 6 if needed
+    if (pin.value.length >= 4) return
     pin.value += key
-
-    // Auto-submit when 4 digits entered
     if (pin.value.length === 4) submitPin()
   }
 
@@ -243,6 +260,10 @@
     errorMsg.value = ''
     try {
       await authStore.loginByPin(pin.value, branchId)
+
+      // ← NEW: pre-cache products & categories after PIN login too
+      warmUpCache().catch(console.error)
+
       router.push('/mart')
     } catch (err) {
       errorMsg.value =
@@ -258,7 +279,6 @@
   .login-bg {
     min-height: 100vh;
   }
-
   .login-card {
     backdrop-filter: blur(10px);
   }
