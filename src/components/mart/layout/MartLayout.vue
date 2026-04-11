@@ -36,12 +36,14 @@
       <v-card rounded="lg" class="pa-2">
         <v-card-title class="text-center pt-4">
           <v-icon size="40" color="success">mdi-check-circle</v-icon>
-          <div class="mt-2 text-h6">Order Placed!</div>
+          <div class="mt-2 text-h6">{{ t('orders.order_placed') }}</div>
         </v-card-title>
 
         <v-card-text class="text-center text-body-2 text-grey-darken-1">
-          Order <strong>#{{ receipt?.order_number }}</strong> — Total
-          <strong>${{ parseFloat(receipt?.total ?? 0).toFixed(2) }}</strong>
+          {{ t('orders.current_order') }}
+          <strong>#{{ receipt?.order_number }}</strong>
+          — {{ t('common.total') }}:
+          <strong>{{ formatKHR(receipt?.total ?? 0)}}</strong>
         </v-card-text>
 
         <v-card-actions class="flex-column ga-2 px-4 pb-4">
@@ -55,16 +57,11 @@
             prepend-icon="mdi-printer"
             @click="handlePrint"
           >
-            Print Receipt
+            {{ t('btn.print_receipt') }}
           </v-btn>
 
-          <v-btn
-            block
-            variant="tonal"
-            rounded="lg"
-            @click="closePrintDialog"
-          >
-            Skip
+          <v-btn block variant="tonal" rounded="lg" @click="closePrintDialog">
+            {{ t('btn.skip') }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -88,6 +85,7 @@
   import { useAppUtils } from '@/composables/useAppUtils'
   import { useI18n } from 'vue-i18n'
   import { useReceipt } from '@/utils/printReceipt'
+  import { formatKHR } from '@nong-official-dev/core'
 
   const { t } = useI18n()
   const { notif } = useAppUtils()
@@ -97,9 +95,9 @@
   const authStore = useAuthStore()
   const router = useRouter()
 
-  const receipt    = ref(null)
+  const receipt = ref(null)
   const cashDialog = ref(false)
-  const printDialog = ref(false)  // ← new: controls print receipt dialog
+  const printDialog = ref(false) // ← new: controls print receipt dialog
 
   const logout = async () => {
     await authStore.logout()
@@ -116,7 +114,6 @@
       // ✅ Show print dialog instead of calling print() directly
       // User will tap "Print Receipt" button → direct gesture → share works!
       printDialog.value = true
-
     } catch (err) {
       console.error(err)
       notif(err.message || 'Checkout failed', { type: 'error' })

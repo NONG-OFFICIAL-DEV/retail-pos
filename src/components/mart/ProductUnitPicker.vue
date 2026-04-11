@@ -152,7 +152,7 @@
                     {{ unit.unit_label || unit.unit_name }}
                   </div>
                   <div class="text-caption text-medium-emphasis">
-                   <strong>{{ unit.qty_per_base }}</strong>  base unit{{
+                   <strong>{{ unit.qty_per_base }}</strong>  {{t('unit.base_unit')}}{{
                       unit.qty_per_base > 1 ? 's' : ''
                     }}
                     <span v-if="unit.barcode" class="ml-2">
@@ -180,7 +180,7 @@
                     v-if="customerType === 'wholesale' && unit.wholesale_price"
                     class="text-caption text-success"
                   >
-                    Wholesale
+                    {{t('unit.wholsale')}}
                   </div>
                   <!-- Out of stock badge on unit -->
                   <v-chip

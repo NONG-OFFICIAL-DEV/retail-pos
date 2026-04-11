@@ -10,8 +10,9 @@
     "next": "Next",
     "confirm": "Confirm",
     "pay": "Pay",
-    "delete": "Delete"
-
+    "delete": "Delete",
+    "print_receipt": "Print Receipt",
+    "skip": "Skip"
   },
   "common": {
     "search": "Search dishes, drinks...",
@@ -68,7 +69,8 @@
     "cash_payment": "Cash Payment",
     "enter_amount_received": "Enter the amount received from customer.",
     "cash_received": "Cash Received",
-    "change": "Change"
+    "change": "Change",
+    "order_placed!": "Order Placed!"
   },
   "product": {
     "all_product": "All Product"
