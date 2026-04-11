@@ -18,16 +18,18 @@
       </div>
 
       <v-text-field
-        v-model.number="cashReceived"
+        :model-value="formattedCash"
         :label="t('orders.cash_received')"
         variant="outlined"
-        type="number"
+        type="text"
+        inputmode="numeric"
         min="0"
         prepend-inner-icon="mdi-cash"
         color="primary"
         autofocus
         hide-details
         class="mb-3"
+        @input="onCashInput"
         @keyup.enter="confirm"
       />
 
@@ -103,7 +105,30 @@
   })
 
   const cashReceived = ref(0)
+  const formattedCash = ref('')
 
+  // Pre-fill exact amount whenever dialog opens
+  watch(
+    () => props.modelValue,
+    open => {
+      if (open) {
+        cashReceived.value = props.total
+        formattedCash.value = formatNumber(props.total)
+      }
+    }
+  )
+
+  const formatNumber = val => {
+    if (!val && val !== 0) return ''
+    return Number(val).toLocaleString('en-US')
+  }
+
+  const onCashInput = e => {
+    // Strip everything except digits
+    const raw = e.target.value.replace(/[^0-9]/g, '')
+    cashReceived.value = raw ? parseInt(raw) : 0
+    formattedCash.value = raw ? parseInt(raw).toLocaleString('en-US') : ''
+  }
   // Pre-fill exact amount whenever dialog opens
   watch(
     () => props.modelValue,
