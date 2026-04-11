@@ -1,32 +1,41 @@
-export const printReceipt = receipt => {
+// src/composables/useReceipt.js
+import { ref } from 'vue'
+
+const payLabel = m =>
+  ({
+    cash:     'Cash',
+    card:     'Card',
+    qr_code:  'QR Code',
+    qr:       'QR',
+    online:   'Transfer',
+    transfer: 'Transfer',
+  })[m] ?? m
+
+const buildHtml = (receipt) => {
   const itemsHtml = (receipt.items ?? [])
-    .map(
-      i => `
-    <div class="item">
-      <div class="item-name">
-        ${i.name}
-        ${i.unit ? `<span class="item-unit">(${i.unit})</span>` : ''}
-      </div>      
-      <div class="item-calc">
-        <span>${i.qty} × $${parseFloat(i.unit_price).toFixed(2)}</span>
-        <span>$${parseFloat(i.total_price).toFixed(2)}</span>
+    .map(i => `
+      <div class="item">
+        <div class="item-name">
+          ${i.name}
+          ${i.unit ? `<span class="item-unit">(${i.unit})</span>` : ''}
+        </div>
+        <div class="item-calc">
+          <span>${i.qty} × $${parseFloat(i.unit_price).toFixed(2)}</span>
+          <span>$${parseFloat(i.total_price).toFixed(2)}</span>
+        </div>
       </div>
-    </div>
-  `
-    )
+    `)
     .join('')
 
-  const html = `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8" />
-  <title>Receipt ${receipt.order_number}</title>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     body { font-family:'Courier New',monospace; font-size:12px; width:80mm; padding:6px 8px 16px; }
     .header    { text-align:center; margin-bottom:10px; }
     .shop-name { font-size:15px; font-weight:bold; }
-    .shop-sub  { font-size:10px; color:#555; margin-top:2px; }
     .dashed    { border:none; border-top:1px dashed #888; margin:7px 0; }
     .double    { border:none; border-top:3px double #000; margin:7px 0; }
     .row       { display:flex; justify-content:space-between; margin:3px 0; font-size:11px; }
@@ -60,8 +69,12 @@ export const printReceipt = receipt => {
   <hr class="dashed" />
 
   <div class="row"><span>Subtotal</span><span>$${parseFloat(receipt.subtotal).toFixed(2)}</span></div>
-  ${parseFloat(receipt.discount ?? 0) > 0 ? `<div class="row green"><span>Discount</span><span>-$${parseFloat(receipt.discount).toFixed(2)}</span></div>` : ''}
-  ${parseFloat(receipt.tax ?? 0) > 0 ? `<div class="row"><span>Tax</span><span>$${parseFloat(receipt.tax).toFixed(2)}</span></div>` : ''}
+  ${parseFloat(receipt.discount ?? 0) > 0
+    ? `<div class="row green"><span>Discount</span><span>-$${parseFloat(receipt.discount).toFixed(2)}</span></div>`
+    : ''}
+  ${parseFloat(receipt.tax ?? 0) > 0
+    ? `<div class="row"><span>Tax</span><span>$${parseFloat(receipt.tax).toFixed(2)}</span></div>`
+    : ''}
 
   <hr class="double" />
 
@@ -77,39 +90,45 @@ export const printReceipt = receipt => {
     <div>Thank you for your purchase!</div>
     <div>អរគុណសម្រាប់ការទិញ!</div>
   </div>
-
-  <script>
-    window.addEventListener('load', function() {
-      window.print()
-      window.addEventListener('afterprint', function() { window.close() })
-    })
-  <\/script>
 </body>
 </html>`
-
-  const win = window.open(
-    '',
-    '_blank',
-    'width=420,height=650,toolbar=0,menubar=0'
-  )
-  if (win) {
-    win.document.write(html)
-    win.document.close()
-  } else {
-    // Popup blocked — blob fallback
-    const blob = new Blob([html], { type: 'text/html' })
-    const url = URL.createObjectURL(blob)
-    window.open(url, '_blank')
-    setTimeout(() => URL.revokeObjectURL(url), 60000)
-  }
 }
 
-const payLabel = m =>
-  ({
-    cash: 'Cash',
-    card: 'Card',
-    qr_code: 'QR Code',
-    qr: 'QR',
-    online: 'Transfer',
-    transfer: 'Transfer'
-  })[m] ?? m
+export function useReceipt() {
+  const printing = ref(false)
+  const error    = ref(null)
+
+  const print = (receipt) => {
+    printing.value = true
+    error.value    = null
+
+    try {
+      // create hidden iframe
+      const iframe = document.createElement('iframe')
+      iframe.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;border:none;opacity:0;'
+      document.body.appendChild(iframe)
+
+      const doc = iframe.contentDocument ?? iframe.contentWindow.document
+      doc.open()
+      doc.write(buildHtml(receipt))
+      doc.close()
+
+      // wait for content to load then print
+      iframe.onload = () => {
+        iframe.contentWindow.focus()
+        iframe.contentWindow.print()
+
+        // remove iframe after print dialog closes
+        setTimeout(() => {
+          document.body.removeChild(iframe)
+          printing.value = false
+        }, 1000)
+      }
+    } catch (err) {
+      error.value    = err.message ?? 'Print failed'
+      printing.value = false
+    }
+  }
+
+  return { printing, error, print }
+}

@@ -47,9 +47,11 @@
   import { useMartStore } from '@/stores/martStore'
   import { useAppUtils } from '@/composables/useAppUtils'
   import { useI18n } from 'vue-i18n'
+  import { useReceipt } from '@/utils/printReceipt'
   const { t } = useI18n()
   const { notif } = useAppUtils()
-  import { printReceipt } from '@/utils/printReceipt'
+
+  const { printing, print } = useReceipt()
 
   const martStore = useMartStore()
   const authStore = useAuthStore()
@@ -71,7 +73,7 @@
       notif('Order placed successfully', { type: 'success' }) // ✅ moved here
 
       await nextTick()
-      printReceipt(data.receipt)
+      print(data.receipt)
       // receipt.value = null
     } catch (err) {
       console.error(err)
