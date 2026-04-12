@@ -58,7 +58,7 @@
           class="mb-4"
           icon="mdi-alert-outline"
         >
-        {{ t('common.only') }}
+          {{ t('common.only') }}
           <strong>
             {{ fmtQty(product.stock_quantity) }} {{ product.unit ?? 'pcs' }}
           </strong>
@@ -137,7 +137,7 @@
           </div>
           <div class="d-flex flex-column gap-2 mb-4">
             <v-card
-              v-for="unit in product.active_units"
+              v-for="unit in sortedUnits"
               :key="unit.id"
               flat
               border
@@ -152,9 +152,9 @@
                     {{ unit.unit_label || unit.unit_name }}
                   </div>
                   <div class="text-caption text-medium-emphasis">
-                   <strong>{{ unit.qty_per_base }}</strong>  {{t('unit.base_unit')}}{{
-                      unit.qty_per_base > 1 ? 's' : ''
-                    }}
+                    <strong>{{ unit.qty_per_base }}</strong>
+                    {{ t('unit.base_unit')
+                    }}{{ unit.qty_per_base > 1 ? 's' : '' }}
                     <span v-if="unit.barcode" class="ml-2">
                       · {{ unit.barcode }}
                     </span>
@@ -169,7 +169,8 @@
                     "
                   >
                     {{ t('common.max') }}: {{ maxForUnit(unit) }}
-                    {{ unit.unit_label ?? unit.unit_name }} {{ t('common.available') }}
+                    {{ unit.unit_label ?? unit.unit_name }}
+                    {{ t('common.available') }}
                   </div>
                 </div>
                 <div class="text-right">
@@ -180,7 +181,7 @@
                     v-if="customerType === 'wholesale' && unit.wholesale_price"
                     class="text-caption text-success"
                   >
-                    {{t('unit.wholsale')}}
+                    {{ t('unit.wholsale') }}
                   </div>
                   <!-- Out of stock badge on unit -->
                   <v-chip
@@ -245,7 +246,8 @@
             >
               <v-icon icon="mdi-alert-circle-outline" size="13" class="mr-1" />
               {{ t('common.only') }} {{ maxForUnit(selectedUnit) }}
-              {{ selectedUnit.unit_label ?? selectedUnit.unit_name }} {{ t('common.available') }}
+              {{ selectedUnit.unit_label ?? selectedUnit.unit_name }}
+              {{ t('common.available') }}
             </div>
           </div>
         </template>
@@ -296,6 +298,11 @@
 
   const hasUnits = computed(() => props.product?.active_units?.length > 0)
 
+  const sortedUnits = computed(() => {
+    return [...(props.product.active_units || [])].sort(
+      (a, b) => a.qty_per_base - b.qty_per_base
+    )
+  })
   // ── Stock status ──────────────────────────────────────────────────────────
   const stockQty = computed(() =>
     parseFloat(props.product?.stock_quantity ?? 0)
@@ -321,8 +328,14 @@
   const stockLabel = computed(() => {
     if (isOutOfStock.value) return t('common.out_of_stock')
     if (isLowStock.value)
-      return t('common.low_stock', { qty: fmtQty(stockQty.value), unit: props.product?.unit ?? 'pcs' })
-    return t('common.in_stock', { qty: fmtQty(stockQty.value), unit: props.product?.unit ?? 'pcs' })
+      return t('common.low_stock', {
+        qty: fmtQty(stockQty.value),
+        unit: props.product?.unit ?? 'pcs'
+      })
+    return t('common.in_stock', {
+      qty: fmtQty(stockQty.value),
+      unit: props.product?.unit ?? 'pcs'
+    })
   })
 
   // Max qty available when no units
