@@ -87,7 +87,6 @@
   import { useReceipt } from '@/utils/printReceipt'
   import { formatKHR } from '@nong-official-dev/core'
   import api from '../../../api/api'
-  import html2canvas from 'html2canvas'
 
   const { t } = useI18n()
   const { notif } = useAppUtils()
