@@ -43,7 +43,7 @@
           {{ t('orders.current_order') }}
           <strong>#{{ receipt?.order_number }}</strong>
           — {{ t('common.total') }}:
-          <strong>{{ formatKHR(receipt?.total ?? 0)}}</strong>
+          <strong>{{ formatKHR(receipt?.total ?? 0) }}</strong>
         </v-card-text>
 
         <v-card-actions class="flex-column ga-2 px-4 pb-4">
@@ -86,6 +86,8 @@
   import { useI18n } from 'vue-i18n'
   import { useReceipt } from '@/utils/printReceipt'
   import { formatKHR } from '@nong-official-dev/core'
+  import api from '../../../api/api'
+  import html2canvas from 'html2canvas'
 
   const { t } = useI18n()
   const { notif } = useAppUtils()
@@ -121,13 +123,17 @@
   }
 
   // ✅ Called directly from button tap — gesture is valid here
-  const handlePrint = () => {
-    print(receipt.value)
-    // Don't close dialog immediately — let user see it while share sheet is open
-    // It will close after they share or cancel
+  const handlePrint = async () => {
+    const data = JSON.parse(JSON.stringify(receipt.value))
     closePrintDialog()
+    await api.post('/print-receipt', data)
   }
-
+  // const handlePrint = () => {
+  //   if (!receipt.value) return
+  //   const data = JSON.parse(JSON.stringify(receipt.value))
+  //   closePrintDialog()
+  //   print(data)
+  // }
   const closePrintDialog = () => {
     printDialog.value = false
     receipt.value = null

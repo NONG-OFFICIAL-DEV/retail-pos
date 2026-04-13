@@ -38,7 +38,7 @@ export const useMartStore = defineStore('mart', {
           id: product.id, // product_id
           product_unit_id: product.product_unit_id ?? null,
           name: product.name,
-          unit: product.unit ?? product.unit_name ?? 'pcs', // display unit
+          unit: product.unit || 'pcs', // display unit
           qty_per_base: product.qty_per_base ?? 1,
           price: parseFloat(
             product.price ?? product.selling_price ?? product.base_price ?? 0
@@ -93,6 +93,13 @@ export const useMartStore = defineStore('mart', {
 
       this.loading = true
       try {
+        const items = this.cartItems.map(i => ({
+          product_id: i.id,
+          unit: i.unit,
+          product_unit_id: i.product_unit_id ?? null,
+          quantity: i.qty
+        }))
+
         const data = await orderStore.createOrder({
           branch_id: auth.branch_id,
           payment_method: this.paymentMethod,
@@ -100,11 +107,7 @@ export const useMartStore = defineStore('mart', {
           discount_amount: this.discount,
           cash_tendered: extraPayload.cash_tendered ?? 0,
           change_given: extraPayload.change_given ?? 0,
-          items: this.cartItems.map(i => ({
-            product_id: i.id,
-            product_unit_id: i.product_unit_id ?? null, // ← send unit to backend
-            quantity: i.qty
-          }))
+          items
         })
         this.clearCart()
         productStore.fetchProducts({ branch_id: auth.branch_id })
