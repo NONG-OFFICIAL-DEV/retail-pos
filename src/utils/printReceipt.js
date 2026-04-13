@@ -49,7 +49,10 @@ const buildHtml = receipt => {
     .item-calc { display:flex; justify-content:space-between; font-size:11px; color:#444; padding-left:4px; margin-top:1px; }
     .grand     { display:flex; justify-content:space-between; font-size:17px; font-weight:bold; padding:3px 0; }
     .footer    { text-align:center; margin-top:12px; font-size:11px; color:#555; line-height:1.9; }
-    @media print { @page { margin:0; size:80mm auto; } }
+    @media print {
+      @page { margin:0; size:80mm auto; }
+      body  { width:80mm; }
+    }
   </style>
 </head>
 <body>
@@ -71,16 +74,12 @@ const buildHtml = receipt => {
   <hr class="dashed" />
 
   <div class="row"><span>Subtotal</span><span>$${parseFloat(receipt.subtotal).toFixed(2)}</span></div>
-  ${
-    parseFloat(receipt.discount ?? 0) > 0
-      ? `<div class="row green"><span>Discount</span><span>-$${parseFloat(receipt.discount).toFixed(2)}</span></div>`
-      : ''
-  }
-  ${
-    parseFloat(receipt.tax ?? 0) > 0
-      ? `<div class="row"><span>Tax</span><span>$${parseFloat(receipt.tax).toFixed(2)}</span></div>`
-      : ''
-  }
+  ${parseFloat(receipt.discount ?? 0) > 0
+    ? `<div class="row green"><span>Discount</span><span>-$${parseFloat(receipt.discount).toFixed(2)}</span></div>`
+    : ''}
+  ${parseFloat(receipt.tax ?? 0) > 0
+    ? `<div class="row"><span>Tax</span><span>$${parseFloat(receipt.tax).toFixed(2)}</span></div>`
+    : ''}
 
   <hr class="double" />
 
@@ -102,51 +101,11 @@ const buildHtml = receipt => {
 
 export function useReceipt() {
   const printing = ref(false)
-  const error = ref(null)
+  const error    = ref(null)
 
-  // ─── Share to PeriPage app (Android Chrome) ───────────────────────────────
-  const shareToApp = async receipt => {
+  const print = receipt => {
     printing.value = true
-    error.value = null
-
-    try {
-      const html = buildHtml(receipt)
-      const blob = new Blob([html], { type: 'text/html' })
-      const file = new File([blob], `receipt-${receipt.order_number}.html`, {
-        type: 'text/html'
-      })
-
-      // Use Web Share API — opens Android share sheet including PeriPage app
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          title: `Receipt #${receipt.order_number}`,
-          files: [file]
-        })
-      } else if (navigator.share) {
-        // Fallback: share as text/URL if file sharing not supported
-        await navigator.share({
-          title: `Receipt #${receipt.order_number}`,
-          text: `Order #${receipt.order_number} - Total: $${parseFloat(receipt.total).toFixed(2)}`
-        })
-      } else {
-        // Browser doesn't support Web Share API — fallback to print dialog
-        printDialog(receipt)
-        return
-      }
-    } catch (err) {
-      if (err.name !== 'AbortError') {
-        // AbortError = user cancelled share sheet, not a real error
-        error.value = err.message ?? 'Share failed'
-      }
-    } finally {
-      printing.value = false
-    }
-  }
-
-  // ─── Classic print dialog (desktop / fallback) ────────────────────────────
-  const printDialog = receipt => {
-    printing.value = true
-    error.value = null
+    error.value    = null
 
     try {
       const iframe = document.createElement('iframe')
@@ -168,24 +127,10 @@ export function useReceipt() {
         }, 1000)
       }
     } catch (err) {
-      error.value = err.message ?? 'Print failed'
+      error.value    = err.message ?? 'Print failed'
       printing.value = false
     }
   }
 
-  // ─── Auto-pick best method ────────────────────────────────────────────────
-  // On Android Chrome → shareToApp (opens PeriPage share sheet)
-  // On desktop        → printDialog (opens print window)
-  const print = receipt => {
-    const isAndroid = /android/i.test(navigator.userAgent)
-    const isMobile = /android|iphone|ipad/i.test(navigator.userAgent)
-
-    if ((isAndroid || isMobile) && navigator.share) {
-      return shareToApp(receipt)
-    } else {
-      return printDialog(receipt)
-    }
-  }
-
-  return { printing, error, print, shareToApp, printDialog }
+  return { printing, error, print }
 }
