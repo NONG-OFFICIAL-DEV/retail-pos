@@ -122,17 +122,17 @@
   }
 
   // ✅ Called directly from button tap — gesture is valid here
-  // const handlePrint = async () => {
-  //   const data = JSON.parse(JSON.stringify(receipt.value))
-  //   closePrintDialog()
-  //   await api.post('/print-receipt', data)
-  // }
- const handlePrint = async () => {
-  if (!receipt.value) return
-  const data = JSON.parse(JSON.stringify(receipt.value))
-  closePrintDialog()
-  await print(data)  // useReceipt handles QZ Tray
-}
+  const handlePrint = async () => {
+    const data = JSON.parse(JSON.stringify(receipt.value))
+    closePrintDialog()
+    await api.post('/print-receipt', data)
+  }
+//  const handlePrint = async () => {
+//   if (!receipt.value) return
+//   const data = JSON.parse(JSON.stringify(receipt.value))
+//   closePrintDialog()
+//   await print(data)  // useReceipt handles QZ Tray
+// }
   const closePrintDialog = () => {
     printDialog.value = false
     receipt.value = null
