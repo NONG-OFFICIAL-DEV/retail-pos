@@ -25,6 +25,14 @@ document.addEventListener(
   },
   { passive: false }
 )
+
+try {
+  const { default: qz } = await import('qz-tray')
+  qz.security.setCertificatePromise(r => r(''))
+  qz.security.setSignatureAlgorithm('SHA512')
+  qz.security.setSignaturePromise(() => r => r(''))
+} catch (_) {}
+
 axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL
 axios.defaults.headers.common['Content-Type'] = 'application/json'
 axios.defaults.headers.common['Accept'] = 'application/json'

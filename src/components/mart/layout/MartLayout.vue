@@ -68,7 +68,11 @@
     </v-dialog>
 
     <!-- ── Footer ───────────────────────────────────────────────────────────── -->
-    <MartFooter />
+    <MartFooter
+      :connectUsb="connectUsb"
+      :usbConnected="usbConnected"
+      :usbSupported="usbSupported"
+    />
   </v-app>
 </template>
 
@@ -90,7 +94,16 @@
 
   const { t } = useI18n()
   const { notif } = useAppUtils()
-  const { printing, print } = useReceipt()
+
+  const {
+    printing,
+    print, // same as before — call this to print
+    connectUsb, // Android only — call once to pair USB printer
+    disconnectUsb, // Android only — unpair
+    usbConnected, // ref — true when USB printer is paired
+    usbSupported, // bool — is WebUSB available
+    printMethod // 'qz' or 'usb'
+  } = useReceipt()
 
   const martStore = useMartStore()
   const authStore = useAuthStore()
@@ -122,17 +135,17 @@
   }
 
   // ✅ Called directly from button tap — gesture is valid here
+  // const handlePrint = async () => {
+  //   const data = JSON.parse(JSON.stringify(receipt.value))
+  //   closePrintDialog()
+  //   await api.post('/print-receipt', data)
+  // }
   const handlePrint = async () => {
+    if (!receipt.value) return
     const data = JSON.parse(JSON.stringify(receipt.value))
     closePrintDialog()
-    await api.post('/print-receipt', data)
+    await print(data) // useReceipt handles QZ Tray
   }
-//  const handlePrint = async () => {
-//   if (!receipt.value) return
-//   const data = JSON.parse(JSON.stringify(receipt.value))
-//   closePrintDialog()
-//   await print(data)  // useReceipt handles QZ Tray
-// }
   const closePrintDialog = () => {
     printDialog.value = false
     receipt.value = null
