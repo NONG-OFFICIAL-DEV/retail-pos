@@ -24,7 +24,7 @@ async function getQz() {
 // CONFIG
 // ─────────────────────────────────────────────────────────────────────────────
 const PAPER_WIDTH_PX = 576  // 80mm @203dpi. Use 384 for 58mm.
-const CHAR_WIDTH     = 32   // chars per line
+const CHAR_WIDTH     = 24   // chars per line — 58mm paper
 const QZ_PRINTER     = 'Diamond' // QZ Tray printer name
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -163,9 +163,10 @@ function buildQzJob(r) {
   }
 
   pushText(INIT)
-  pushText(ALIGN_CENTER + BOLD_ON + DOUBLE_ON)
+  // Double HEIGHT only for shop name — 0x10 prevents overflow on 58mm
+  pushText(ALIGN_CENTER + BOLD_ON + ESC + '!\x10')
   pushText((r.branch_name ?? 'MY STORE') + LF)
-  pushText(DOUBLE_OFF + BOLD_OFF)
+  pushText(ESC + '!\x00' + BOLD_OFF)
   if (r.branch_phone) pushText('Tel: ' + r.branch_phone + LF)
 
   pushText(ALIGN_LEFT + line())
@@ -214,17 +215,22 @@ function buildUsbBytes(r) {
   const { items, subtotal, discount, tax, total, cash, change, payLbl } = buildTotals(r)
 
   const bytes = []
-  const enc   = new TextEncoder()
-  const t     = str => bytes.push(...enc.encode(str))
+  // Strip ALL non-ASCII chars first, then encode as Latin-1 bytes
+  // This prevents Khmer/unicode from reaching the printer as garbled bytes
+  const t = str => {
+    const safe = str.replace(/[^\x20-\x7E\n]/g, '') // only printable ASCII + newline
+    for (let i = 0; i < safe.length; i++) bytes.push(safe.charCodeAt(i) & 0xFF)
+  }
   const b     = arr => bytes.push(...arr)
-  const ESC_B = 0x1B, GS_B = 0x1D, LF_B = 0x0A
+  const ESC_B = 0x1B, GS_B = 0x1D
 
   // Strip Khmer — keep Latin chars only
-  const stripKhmer = s => s.replace(/[\u1780-\u17FF]/g, '').trim()
+  // Strip all non-ASCII-printable chars (Khmer, special unicode, etc.)
+  const stripKhmer = s => s.replace(/[^\x20-\x7E]/g, '').replace(/\s+/g, ' ').trim()
 
   b([ESC_B, 0x40])                              // init
   b([ESC_B, 0x61, 0x01])                        // center
-  b([ESC_B, 0x45, 0x01, ESC_B, 0x21, 0x30])    // bold + double
+  b([ESC_B, 0x45, 0x01, ESC_B, 0x21, 0x10])    // bold + double HEIGHT only
   t((r.branch_name ?? 'MY STORE') + '\n')
   b([ESC_B, 0x21, 0x00, ESC_B, 0x45, 0x00])    // normal
   if (r.branch_phone) t('Tel: ' + r.branch_phone + '\n')
@@ -239,10 +245,14 @@ function buildUsbBytes(r) {
 
   for (const item of items) {
     const raw   = (item.name ?? '') + (item.unit ? ` (${item.unit})` : '')
-    const label = stripKhmer(raw) || '(item)'
-    b([ESC_B, 0x45, 0x01])
+    const latinOnly = stripKhmer(raw)
+    const label = latinOnly || stripKhmer(item.name ?? '').split(' ')[0] || 'Item'
+    // Double height for item name — easier to read on 58mm paper
+    b([ESC_B, 0x45, 0x01])          // bold on
+    b([ESC_B, 0x21, 0x10])          // double height only (not width, keeps layout)
     t(label.slice(0, CHAR_WIDTH) + '\n')
-    b([ESC_B, 0x45, 0x00])
+    b([ESC_B, 0x21, 0x00])          // normal size
+    b([ESC_B, 0x45, 0x00])          // bold off
     const qtyStr   = `  ${item.qty} x $${money(item.unit_price)}`
     const totalStr = '$' + money(item.total_price ?? item.qty * item.unit_price)
     t(pad(qtyStr, CHAR_WIDTH - totalStr.length) + totalStr + '\n')
@@ -253,7 +263,7 @@ function buildUsbBytes(r) {
   if (discount > 0) t(twoCol('Discount:', '-$' + money(discount)) + '\n')
   if (tax > 0)      t(twoCol('Tax:',       '$' + money(tax))      + '\n')
   t(dLine())
-  b([ESC_B, 0x45, 0x01, ESC_B, 0x21, 0x30])
+  b([ESC_B, 0x45, 0x01, ESC_B, 0x21, 0x10])    // bold + double HEIGHT only
   t(twoCol('TOTAL', '$' + money(total)) + '\n')
   b([ESC_B, 0x21, 0x00, ESC_B, 0x45, 0x00])
   t(dLine())
@@ -265,11 +275,11 @@ function buildUsbBytes(r) {
     b([ESC_B, 0x45, 0x00])
   }
   t(line())
-  b([ESC_B, 0x61, 0x01])
-  t('Thank you for your purchase!\n')
+  b([ESC_B, 0x61, 0x01])  // center
+  t('Thank you!\n')
   t('Please come again :)\n')
   t('\n\n\n')
-  b([GS_B, 0x56, 0x41, 0x05])                  // cut
+  b([GS_B, 0x56, 0x41, 0x05])  // cut
 
   return new Uint8Array(bytes)
 }
