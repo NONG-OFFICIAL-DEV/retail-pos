@@ -149,15 +149,8 @@
               <div class="d-flex align-center justify-space-between">
                 <div>
                   <div class="text-body-2 font-weight-bold">
-                    {{ unit.unit_label || unit.unit_name }}
-                  </div>
-                  <div class="text-caption text-medium-emphasis">
                     <strong>{{ unit.qty_per_base }}</strong>
-                    {{ t('unit.base_unit')
-                    }}{{ unit.qty_per_base > 1 ? 's' : '' }}
-                    <span v-if="unit.barcode" class="ml-2">
-                      · {{ unit.barcode }}
-                    </span>
+                    x {{ unit.unit_label || unit.unit_name }}
                   </div>
                   <!-- Max available in this unit -->
                   <div
