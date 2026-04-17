@@ -64,7 +64,7 @@
     "enter_amount_received": "បញ្ចូលចំនួនទឹកប្រាក់ដែលទទួលបានពីអតិថិជន។",
     "cash_received": "ទឹកប្រាក់ទទួល",
     "change": "ប្រាក់អាប់",
-    "order_placed!": "បញ្ជាទិញបានជោគជ័យ!"
+    "order_placed": "បញ្ជាទិញបានជោគជ័យ!"
   },
   "product": {
     "all_product": "ផលិតផលទាំងអស់"

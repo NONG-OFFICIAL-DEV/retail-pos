@@ -70,7 +70,7 @@
     "enter_amount_received": "Enter the amount received from customer.",
     "cash_received": "Cash Received",
     "change": "Change",
-    "order_placed!": "Order Placed!"
+    "order_placed": "Order Placed!"
   },
   "product": {
     "all_product": "All Product"
