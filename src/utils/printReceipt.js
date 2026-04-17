@@ -384,35 +384,72 @@ function buildQzJob(r) {
 // WebUSB job (Android — ASCII only, raw bytes)
 // ─────────────────────────────────────────────────────────────────────────────
 function buildUsbBytes(r) {
-  const { items } = buildTotals(r)
   const bytes = []
-  
-  // Helper to push raw command arrays into the bytes array
-  const b = arr => bytes.push(...arr)
-  const t = str => { for (const c of str) bytes.push(c.charCodeAt(0) & 0xFF) }
 
-  for (const item of items) {
-    const label = (item.name ?? '')
-    
-    if (hasKhmer(label)) {
-      // INSTEAD OF TEXT: Generate the image bytes
-      const imageBytes = textToEscPosImage(label, { 
-        fontSize: 22, 
-        bold: true,
-        maxWidth: CFG.PAPER_PX 
-      })
-      b(imageBytes) // Send the image data to the USB buffer
-    } else {
-      // Standard ASCII for English
-      b([0x1B, 0x45, 0x01]) // Bold on
-      t(label + '\n')
-      b([0x1B, 0x45, 0x00]) // Bold off
+  const pushText = (str) => {
+    for (let i = 0; i < str.length; i++) {
+      bytes.push(str.charCodeAt(i))
     }
   }
-  // ... rest of footer
+
+  const pushImg = (text, opts = {}) => {
+    const img = textToEscPosImage(text, opts)
+    bytes.push(...img)
+  }
+
+  const line = '-'.repeat(32) + '\n'
+
+  // INIT
+  bytes.push(0x1B, 0x40)
+
+  // ── HEADER ─────────────────────
+  bytes.push(0x1B, 0x61, 0x01) // center
+
+  pushImg(r.branch_name || 'ហាងរបស់ខ្ញុំ', { bold: true, fontSize: 22, align: 'center' })
+
+  if (r.branch_phone) {
+    pushText(r.branch_phone + '\n')
+  }
+
+  // ── INFO ─────────────────────
+  bytes.push(0x1B, 0x61, 0x00) // left
+  pushText(line)
+
+  pushImg(`លេខបញ្ជាទិញ: ${r.order_number || '-'}`)
+  pushImg(`ថ្ងៃ: ${r.printed_at || new Date().toLocaleString()}`)
+
+  pushText(line)
+
+  // ── ITEMS ─────────────────────
+  for (const item of r.items || []) {
+    const name = item.name || ''
+
+    // ALWAYS image for Khmer-safe
+    pushImg(name, { bold: true, fontSize: 20 })
+
+    const qty = `${item.qty} x`
+    const price = formatRiel(item.total_price || item.qty * item.unit_price)
+
+    pushText(twoCol(qty, price) + '\n')
+  }
+
+  // ── TOTAL ─────────────────────
+  pushText(line)
+
+  pushImg(`សរុប: ${formatRiel(r.total)}`, { bold: true, fontSize: 22 })
+
+  // ── FOOTER ─────────────────────
+  bytes.push(0x1B, 0x61, 0x01)
+
+  pushImg('អរគុណសម្រាប់ការទិញ!', { align: 'center', fontSize: 18 })
+
+  pushText('\n\n\n')
+
+  // CUT
+  bytes.push(0x1D, 0x56, 0x41, 0x05)
+
   return new Uint8Array(bytes)
 }
-
 // ─────────────────────────────────────────────────────────────────────────────
 // [FIX 12] Find bulk-OUT endpoint
 // Previous: used iface.alternate (singular — wrong WebUSB API property name)
