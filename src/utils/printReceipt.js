@@ -23,27 +23,15 @@ async function getQz() {
 // ─────────────────────────────────────────────────────────────────────────────
 // CONFIG
 // ─────────────────────────────────────────────────────────────────────────────
-const PAPER_WIDTH_PX = 384 // 58mm @203dpi = 384px. Use 576 for 80mm.
-const CHAR_WIDTH = 32 // chars per line
+const PAPER_WIDTH_PX = 576 // ✅ 80mm @203dpi (approx)
+const CHAR_WIDTH = 48 // ✅ correct text columns
 const QZ_PRINTER = 'Diamond'
 const CURRENCY = '៛'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ESC/POS constants
 // ─────────────────────────────────────────────────────────────────────────────
-const ESC = '\x1B'
-const GS = '\x1D'
 const LF = '\x0A'
-
-const INIT = ESC + '@'
-const ALIGN_CENTER = ESC + 'a\x01'
-const ALIGN_LEFT = ESC + 'a\x00'
-const BOLD_ON = ESC + 'E\x01'
-const BOLD_OFF = ESC + 'E\x00'
-const DOUBLE_ON = ESC + '!\x30'
-const DOUBLE_OFF = ESC + '!\x00'
-const DOUBLE_H = ESC + '!\x10' // double height only
-const CUT = GS + 'V\x41\x05'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Payment labels (Khmer + English)
@@ -66,7 +54,12 @@ const money = v =>
 
 const hasKhmer = s => /[\u1780-\u17FF]/.test(s)
 const isAndroid = () => /android/i.test(navigator.userAgent)
-const pad = (s, n) => String(s).padEnd(n, ' ')
+const pad = (s, n) => {
+  const str = String(s)
+  const len = [...str].length
+  const spaces = Math.max(n - len, 0)
+  return str + ' '.repeat(spaces)
+}
 
 const twoCol = (l, r, w = CHAR_WIDTH) => {
   const gap = Math.max(1, w - l.length - r.length)
@@ -171,6 +164,82 @@ function buildTotals(r) {
   return { items, subtotal, discount, tax, total, cash, change, payLbl }
 }
 
+// Draws a table row with fixed pixel positions for perfect alignment
+function tableRowToEscPosImage(
+  cols,
+  { bold = false, fontSize = 20, marginTop = 10 } = {}
+) {
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+
+  // Calculate height: Font size + margin top + a little bottom padding
+  const lineH = fontSize + marginTop + 10
+
+  canvas.width = PAPER_WIDTH_PX
+  canvas.height = lineH
+
+  // Fill background white
+  ctx.fillStyle = '#fff'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+  // Text style
+  ctx.fillStyle = '#000'
+  ctx.font = `${bold ? 'bold ' : ''}${fontSize}px Hanuman, "Noto Sans Khmer", Arial, sans-serif`
+
+  // IMPORTANT: Set Baseline to 'bottom' and use the full height to draw
+  // This leaves the 'marginTop' pixels as empty space at the top
+  ctx.textBaseline = 'bottom'
+  const drawY = canvas.height - 5 // 5px buffer from the bottom
+
+  const colNameX = 4
+  const colQtyX = PAPER_WIDTH_PX * 0.52 // Adjust based on your preference
+  const colTotalX = PAPER_WIDTH_PX - 4
+
+  // Column 1: Name
+  ctx.textAlign = 'left'
+  ctx.fillText(cols[0], colNameX, drawY)
+
+  // Column 2: Qty
+  ctx.textAlign = 'left'
+  ctx.fillText(cols[1], colQtyX, drawY)
+
+  // Column 3: Total
+  ctx.textAlign = 'right'
+  ctx.fillText(cols[2], colTotalX, drawY)
+
+  return canvasToRaster(canvas)
+}
+
+function totalsRowToEscPosImage(
+  label,
+  value,
+  { bold = false, fontSize = 20, marginTop = 8 } = {}
+) {
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+  const lineH = fontSize + marginTop + 10
+
+  canvas.width = PAPER_WIDTH_PX
+  canvas.height = lineH
+
+  ctx.fillStyle = '#fff'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  ctx.fillStyle = '#000'
+  ctx.font = `${bold ? 'bold ' : ''}${fontSize}px Hanuman, "Noto Sans Khmer", Arial, sans-serif`
+  ctx.textBaseline = 'bottom'
+
+  const drawY = canvas.height - 5
+
+  // Label (Far Left)
+  ctx.textAlign = 'left'
+  ctx.fillText(label, 4, drawY)
+
+  // Value (Far Right)
+  ctx.textAlign = 'right'
+  ctx.fillText(value, PAPER_WIDTH_PX - 4, drawY)
+
+  return canvasToRaster(canvas)
+}
 // ─────────────────────────────────────────────────────────────────────────────
 // Build shared byte array — used by BOTH QZ Tray and WebUSB
 // Khmer text → canvas raster image bytes (works on any printer)
@@ -245,59 +314,71 @@ function buildBytes(r) {
   )
   t(line())
 
+  // ── ITEMS TABLE HEADER ──
+  b([E, 0x61, 0x00]) // left
+
+  // Render Header as an image so it matches the rows exactly
+  b(
+    tableRowToEscPosImage(['Name', 'Qty', 'Total'], {
+      bold: true,
+      fontSize: 18
+    })
+  )
+  t(line())
+
   // ── ITEMS ──
   for (const item of items) {
     const label = (item.name ?? '') + (item.unit ? ` (${item.unit})` : '')
-    const unitAmt = money(item.unit_price)
+    const qtyStr = `${item.qty} x ${money(item.unit_price)}` // Simplified for table
     const totalAmt = money(item.total_price ?? item.qty * item.unit_price)
-    const qtyLine =
-      pad(`  ${item.qty} x ${unitAmt}`, CHAR_WIDTH - totalAmt.length) +
-      totalAmt +
-      '\n'
 
-    b([E, 0x61, 0x00]) // left
-
-    // Item name — Khmer as image, Latin as bold double-height text
-    if (hasKhmer(label)) {
-      img(label, { bold: true, fontSize: 22 })
-    } else {
-      b([E, 0x45, 0x01, E, 0x21, 0x10]) // bold + double height
-      t(label.slice(0, CHAR_WIDTH) + '\n')
-      b([E, 0x21, 0x00, E, 0x45, 0x00])
-    }
-
-    // Qty × price — total right aligned
-    // qty line may contain ៛ so use auto()
-    auto(qtyLine, { fontSize: 24 })
+    // ALWAYS render as image using fixed pixel positions
+    // Pass marginTop: 15 for a nice gap between items
+    b(
+      tableRowToEscPosImage([label, qtyStr, totalAmt], {
+        fontSize: 20,
+        marginTop: 15
+      })
+    )
   }
 
   // ── TOTALS ──
   t(line())
-  auto(twoCol('Subtotal / សរុបរង:', money(subtotal)) + '\n', { fontSize: 20 })
-  if (discount > 0)
-    auto(twoCol('Discount / បញ្ចុះ:', '-' + money(discount)) + '\n', {
-      fontSize: 20
-    })
-  if (tax > 0) auto(twoCol('Tax / ពន្ធ:', money(tax)) + '\n', { fontSize: 20 })
+
+  // Subtotal
+  b(totalsRowToEscPosImage('Subtotal / សរុបរង:', money(subtotal)))
+
+  if (discount > 0) {
+    b(totalsRowToEscPosImage('Discount / បញ្ចុះ:', '-' + money(discount)))
+  }
+
+  if (tax > 0) {
+    b(totalsRowToEscPosImage('Tax / ពន្ធ:', money(tax)))
+  }
+
   t(dLine())
 
-  // Grand total
-  b([E, 0x61, 0x01]) // center
-  img('សរុបទាំងអស់', { bold: true, fontSize: 22, align: 'center' })
-  b([E, 0x45, 0x01, E, 0x21, 0x30]) // bold + double width+height
-  auto(money(total) + '\n', { bold: true, fontSize: 30, align: 'center' })
-  b([E, 0x21, 0x00, E, 0x45, 0x00])
+  // Grand total - Bold and slightly larger font
+  b(
+    totalsRowToEscPosImage('Total / សរុបទាំងអស់:', money(total), {
+      bold: true,
+      fontSize: 24,
+      marginTop: 12
+    })
+  )
+
   t(dLine())
 
   // ── PAYMENT ──
-  b([E, 0x61, 0x00]) // left
-  auto(twoCol('Payment / បង់:', payLbl) + '\n', { fontSize: 20 })
-  if (cash > 0)
-    auto(twoCol('Cash / ទទួល:', money(cash)) + '\n', { fontSize: 20 })
+  b(totalsRowToEscPosImage('Payment / បង់:', payLbl))
+
+  if (cash > 0) {
+    b(totalsRowToEscPosImage('Cash / ទទួល:', money(cash)))
+  }
+
   if (change > 0) {
-    b([E, 0x45, 0x01])
-    auto(twoCol('Change / អាប:', money(change)) + '\n', { fontSize: 20 })
-    b([E, 0x45, 0x00])
+    // Change is usually important, make it bold
+    b(totalsRowToEscPosImage('Change / អាប:', money(change), { bold: true }))
   }
 
   // ── FOOTER ──
