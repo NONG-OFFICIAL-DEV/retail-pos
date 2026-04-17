@@ -68,7 +68,7 @@ const isAndroid = () => /android/i.test(navigator.userAgent)
 // ─────────────────────────────────────────────────────────────────────────────
 // Khmer canvas image → ESC/POS raster bytes (desktop/QZ Tray only)
 // ─────────────────────────────────────────────────────────────────────────────
-function textToEscPosImage(text, { bold = false, fontSize = 16, align = 'left' } = {}) {
+function textToEscPosImage(text, { bold = false, fontSize = 22, align = 'left' } = {}) {
   const canvas  = document.createElement('canvas')
   const lineH   = fontSize + 10
   canvas.width  = PAPER_WIDTH_PX
@@ -115,7 +115,7 @@ function canvasToRaster(canvas) {
     for (let x = 0; x < width; x++) {
       const idx = (y * width + x) * 4
       const lum = 0.299 * imgData[idx] + 0.587 * imgData[idx+1] + 0.114 * imgData[idx+2]
-      if (lum < 128) row[Math.floor(x / 8)] |= (0x80 >> (x % 8))
+      if (lum < 160) row[Math.floor(x / 8)] |= (0x80 >> (x % 8))
     }
     rows.push(row)
   }
@@ -215,75 +215,133 @@ function buildUsbBytes(r) {
   const { items, subtotal, discount, tax, total, cash, change, payLbl } = buildTotals(r)
 
   const bytes = []
-  // Strip ALL non-ASCII chars first, then encode as Latin-1 bytes
-  // This prevents Khmer/unicode from reaching the printer as garbled bytes
+
   const t = str => {
-    const safe = str.replace(/[^\x20-\x7E\n]/g, '') // only printable ASCII + newline
-    for (let i = 0; i < safe.length; i++) bytes.push(safe.charCodeAt(i) & 0xFF)
+    for (let i = 0; i < str.length; i++) {
+      bytes.push(str.charCodeAt(i) & 0xFF)
+    }
   }
+
   const b     = arr => bytes.push(...arr)
-  const ESC_B = 0x1B, GS_B = 0x1D
+  const ESC_B = 0x1B
+  const GS_B  = 0x1D
 
-  // Strip Khmer — keep Latin chars only
-  // Strip all non-ASCII-printable chars (Khmer, special unicode, etc.)
-  const stripKhmer = s => s.replace(/[^\x20-\x7E]/g, '').replace(/\s+/g, ' ').trim()
+  // ── INIT ─────────────────────────────────────────
+  b([ESC_B, 0x40]) // init
+  b([ESC_B, 0x61, 0x01]) // center
 
-  b([ESC_B, 0x40])                              // init
-  b([ESC_B, 0x61, 0x01])                        // center
-  b([ESC_B, 0x45, 0x01, ESC_B, 0x21, 0x10])    // bold + double HEIGHT only
-  t((r.branch_name ?? 'MY STORE') + '\n')
-  b([ESC_B, 0x21, 0x00, ESC_B, 0x45, 0x00])    // normal
-  if (r.branch_phone) t('Tel: ' + r.branch_phone + '\n')
+  // ── HEADER ───────────────────────────────────────
+  if (hasKhmer(r.branch_name ?? '')) {
+    const img = textToEscPosImage(r.branch_name, {
+      bold: true,
+      fontSize: 28,
+      align: 'center'
+    })
+    b(img)
+  } else {
+    b([ESC_B, 0x45, 0x01])
+    b([ESC_B, 0x21, 0x10])
+    t((r.branch_name ?? 'MY STORE') + '\n')
+    b([ESC_B, 0x21, 0x00])
+    b([ESC_B, 0x45, 0x00])
+  }
 
-  b([ESC_B, 0x61, 0x00])                        // left
+  if (r.branch_phone) {
+    t('Tel: ' + r.branch_phone + '\n')
+  }
+
+  // ── INFO ─────────────────────────────────────────
+  b([ESC_B, 0x61, 0x00]) // left
   t(line())
   t(twoCol('Order #:', r.order_number ?? '-') + '\n')
   t(twoCol('Date:',    r.printed_at   ?? new Date().toLocaleString()) + '\n')
-  t(twoCol('Cashier:', r.cashier      ?? '-') + '\n')
-  t(twoCol('Type:',    r.customer_type === 'wholesale' ? 'Wholesale' : 'Retail') + '\n')
+
+  if (hasKhmer(r.cashier ?? '')) {
+    t('Cashier:\n')
+    const img = textToEscPosImage(r.cashier, { fontSize: 22 })
+    b(img)
+  } else {
+    t(twoCol('Cashier:', r.cashier ?? '-') + '\n')
+  }
+
+  t(twoCol('Type:', r.customer_type === 'wholesale' ? 'Wholesale' : 'Retail') + '\n')
   t(line())
 
+  // ── ITEMS ────────────────────────────────────────
   for (const item of items) {
-    const raw   = (item.name ?? '') + (item.unit ? ` (${item.unit})` : '')
-    const latinOnly = stripKhmer(raw)
-    const label = latinOnly || stripKhmer(item.name ?? '').split(' ')[0] || 'Item'
-    // Double height for item name — easier to read on 58mm paper
-    b([ESC_B, 0x45, 0x01])          // bold on
-    b([ESC_B, 0x21, 0x10])          // double height only (not width, keeps layout)
-    t(label.slice(0, CHAR_WIDTH) + '\n')
-    b([ESC_B, 0x21, 0x00])          // normal size
-    b([ESC_B, 0x45, 0x00])          // bold off
+    const label = (item.name ?? '') + (item.unit ? ` (${item.unit})` : '')
+
+    if (hasKhmer(label)) {
+      const img = textToEscPosImage(label, {
+        bold: true,
+        fontSize: 24
+      })
+      b(img)
+    } else {
+      b([ESC_B, 0x45, 0x01])
+      b([ESC_B, 0x21, 0x10])
+      t(label.slice(0, CHAR_WIDTH) + '\n')
+      b([ESC_B, 0x21, 0x00])
+      b([ESC_B, 0x45, 0x00])
+    }
+
     const qtyStr   = `  ${item.qty} x $${money(item.unit_price)}`
     const totalStr = '$' + money(item.total_price ?? item.qty * item.unit_price)
     t(pad(qtyStr, CHAR_WIDTH - totalStr.length) + totalStr + '\n')
   }
 
+  // ── TOTALS ───────────────────────────────────────
   t(line())
   t(twoCol('Subtotal:', '$' + money(subtotal)) + '\n')
-  if (discount > 0) t(twoCol('Discount:', '-$' + money(discount)) + '\n')
-  if (tax > 0)      t(twoCol('Tax:',       '$' + money(tax))      + '\n')
+
+  if (discount > 0) {
+    t(twoCol('Discount:', '-$' + money(discount)) + '\n')
+  }
+  if (tax > 0) {
+    t(twoCol('Tax:', '$' + money(tax)) + '\n')
+  }
+
   t(dLine())
-  b([ESC_B, 0x45, 0x01, ESC_B, 0x21, 0x10])    // bold + double HEIGHT only
+
+  b([ESC_B, 0x45, 0x01])
+  b([ESC_B, 0x21, 0x10])
   t(twoCol('TOTAL', '$' + money(total)) + '\n')
-  b([ESC_B, 0x21, 0x00, ESC_B, 0x45, 0x00])
+  b([ESC_B, 0x21, 0x00])
+  b([ESC_B, 0x45, 0x00])
+
   t(dLine())
+
+  // ── PAYMENT ──────────────────────────────────────
   t(twoCol('Payment:', payLbl) + '\n')
-  if (cash   > 0) t(twoCol('Cash:',   '$' + money(cash))   + '\n')
+
+  if (cash > 0) {
+    t(twoCol('Cash:', '$' + money(cash)) + '\n')
+  }
   if (change > 0) {
     b([ESC_B, 0x45, 0x01])
     t(twoCol('Change:', '$' + money(change)) + '\n')
     b([ESC_B, 0x45, 0x00])
   }
+
+  // ── FOOTER ───────────────────────────────────────
   t(line())
-  b([ESC_B, 0x61, 0x01])  // center
+  b([ESC_B, 0x61, 0x01]) // center
+
   t('Thank you!\n')
-  t('Please come again :)\n')
+
+  const khFooter = textToEscPosImage('អរគុណសម្រាប់ការទិញ!', {
+    fontSize: 24,
+    align: 'center'
+  })
+  b(khFooter)
+
   t('\n\n\n')
-  b([GS_B, 0x56, 0x41, 0x05])  // cut
+
+  // ── CUT ──────────────────────────────────────────
+  b([GS_B, 0x56, 0x41, 0x05])
 
   return new Uint8Array(bytes)
 }
-
 // ─────────────────────────────────────────────────────────────────────────────
 // WebUSB helpers
 // ─────────────────────────────────────────────────────────────────────────────
