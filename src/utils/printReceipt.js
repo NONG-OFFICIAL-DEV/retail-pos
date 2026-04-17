@@ -40,61 +40,68 @@ async function getQz() {
 // CONFIG  — change these to match your hardware
 // ─────────────────────────────────────────────────────────────────────────────
 const CFG = {
-  PAPER_MM:   80,    // 58 or 80
-  PAPER_PX:   576,   // 80mm@203dpi=576 | 58mm@203dpi=384
+  PAPER_MM: 80, // 58 or 80
+  PAPER_PX: 576, // 80mm@203dpi=576 | 58mm@203dpi=384
   // [FIX 1] CHAR_WIDTH must match paper size. 80mm≈42, 58mm≈32
   CHAR_WIDTH: 42,
   QZ_PRINTER: 'Diamond',
-  USB_CHUNK:  64,    // bytes per WebUSB transferOut call
-  FONT_STACK: '"Noto Sans Khmer", Hanuman, "Khmer OS", sans-serif',
+  USB_CHUNK: 64, // bytes per WebUSB transferOut call
+  FONT_STACK: '"Noto Sans Khmer", Hanuman, "Khmer OS", sans-serif'
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ESC/POS command constants
 // ─────────────────────────────────────────────────────────────────────────────
 const ESC = '\x1B'
-const GS  = '\x1D'
-const LF  = '\x0A'
+const GS = '\x1D'
+const LF = '\x0A'
 
 const CMD = {
-  INIT:           ESC + '@',
-  ALIGN_LEFT:     ESC + 'a\x00',
-  ALIGN_CENTER:   ESC + 'a\x01',
-  ALIGN_RIGHT:    ESC + 'a\x02',
-  BOLD_ON:        ESC + 'E\x01',
-  BOLD_OFF:       ESC + 'E\x00',
+  INIT: ESC + '@',
+  ALIGN_LEFT: ESC + 'a\x00',
+  ALIGN_CENTER: ESC + 'a\x01',
+  ALIGN_RIGHT: ESC + 'a\x02',
+  BOLD_ON: ESC + 'E\x01',
+  BOLD_OFF: ESC + 'E\x00',
   // [FIX 2] 0x30 = double width+height → breaks column layout on narrow paper
   //         0x10 = double height only  → safe for all widths
   //         0x30 reserved for grand total only (full double intentional there)
-  DBL_HEIGHT_ON:  ESC + '!\x10',
+  DBL_HEIGHT_ON: ESC + '!\x10',
   DBL_HEIGHT_OFF: ESC + '!\x00',
-  DBL_SIZE_ON:    ESC + '!\x30',  // double width+height — grand total only
-  DBL_SIZE_OFF:   ESC + '!\x00',
-  CUT:            GS  + 'V\x41\x05',
+  DBL_SIZE_ON: ESC + '!\x30', // double width+height — grand total only
+  DBL_SIZE_OFF: ESC + '!\x00',
+  CUT: GS + 'V\x41\x05'
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 const PAY_LABEL = {
-  cash: 'Cash', card: 'Card',
-  qr_code: 'QR Code', qr: 'QR Code',
-  online: 'Transfer', transfer: 'Bank Transfer',
+  cash: 'Cash',
+  card: 'Card',
+  qr_code: 'QR Code',
+  qr: 'QR Code',
+  online: 'Transfer',
+  transfer: 'Bank Transfer'
 }
 
-const money     = v => parseFloat(v || 0).toFixed(2)
-const hasKhmer  = s => /[\u1780-\u17FF]/.test(s)
+const money = v => parseFloat(v || 0).toFixed(2)
+const hasKhmer = s => /[\u1780-\u17FF]/.test(s)
 const isAndroid = () => /android/i.test(navigator.userAgent)
 
 const twoCol = (l, r, w = CFG.CHAR_WIDTH) => {
   const gap = Math.max(1, w - l.length - r.length)
   return l + ' '.repeat(gap) + r
 }
-const line  = (w = CFG.CHAR_WIDTH) => '-'.repeat(w) + LF
+const line = (w = CFG.CHAR_WIDTH) => '-'.repeat(w) + LF
 const dLine = (w = CFG.CHAR_WIDTH) => '='.repeat(w) + LF
 
 // Strip to printable ASCII (USB path — printer has no Unicode support)
-const toAscii = s => s.replace(/[^\x20-\x7E]/g, '').replace(/\s+/g, ' ').trim()
+const toAscii = s =>
+  s
+    .replace(/[^\x20-\x7E]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
 
 // ─────────────────────────────────────────────────────────────────────────────
 // [FIX 3] toBase64 — safe UTF-8 encoding
@@ -117,18 +124,16 @@ function uint8ToBase64(arr) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Khmer text → ESC/POS raster image bytes
 // ─────────────────────────────────────────────────────────────────────────────
-function textToEscPosImage(text, {
-  bold     = false,
-  fontSize = 20,
-  align    = 'left',
-  maxWidth = CFG.PAPER_PX,
-} = {}) {
-  const canvas  = document.createElement('canvas')
-  const ctx     = canvas.getContext('2d')
-  canvas.width  = maxWidth
+function textToEscPosImage(
+  text,
+  { bold = false, fontSize = 20, align = 'left', maxWidth = CFG.PAPER_PX } = {}
+) {
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+  canvas.width = maxWidth
 
   // [FIX 5] Khmer vowel stacks need 1.9× line height (not fontSize+10)
-  const lineH   = Math.ceil(fontSize * 1.9)
+  const lineH = Math.ceil(fontSize * 1.9)
   const fontStr = `${bold ? 'bold ' : ''}${fontSize}px ${CFG.FONT_STACK}`
 
   ctx.font = fontStr
@@ -151,17 +156,17 @@ function textToEscPosImage(text, {
   // [FIX 6] canvas height resize resets ctx state — must re-apply font after
   canvas.height = lines.length * lineH + Math.ceil(fontSize * 0.4)
 
-  ctx.fillStyle    = '#ffffff'
+  ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, 0, canvas.width, canvas.height)
-  ctx.fillStyle    = '#000000'
-  ctx.font         = fontStr   // ← re-apply after resize
+  ctx.fillStyle = '#000000'
+  ctx.font = fontStr // ← re-apply after resize
   ctx.textBaseline = 'top'
 
   lines.forEach((ln, i) => {
     let x = 2
     const w = ctx.measureText(ln).width
     if (align === 'center') x = Math.max(0, (maxWidth - w) / 2)
-    if (align === 'right')  x = Math.max(0, maxWidth - w - 2)
+    if (align === 'right') x = Math.max(0, maxWidth - w - 2)
     ctx.fillText(ln, x, i * lineH)
   })
 
@@ -170,23 +175,28 @@ function textToEscPosImage(text, {
 
 // Canvas → ESC/POS GS v 0 raster bytes
 function canvasToRaster(canvas) {
-  const ctx           = canvas.getContext('2d')
+  const ctx = canvas.getContext('2d')
   const { width, height } = canvas
-  const data          = ctx.getImageData(0, 0, width, height).data
-  const bytesPerRow   = Math.ceil(width / 8)
+  const data = ctx.getImageData(0, 0, width, height).data
+  const bytesPerRow = Math.ceil(width / 8)
 
   const header = [
-    0x1D, 0x76, 0x30, 0x00,
-    bytesPerRow & 0xFF, (bytesPerRow >> 8) & 0xFF,
-    height      & 0xFF, (height      >> 8) & 0xFF,
+    0x1d,
+    0x76,
+    0x30,
+    0x00,
+    bytesPerRow & 0xff,
+    (bytesPerRow >> 8) & 0xff,
+    height & 0xff,
+    (height >> 8) & 0xff
   ]
   const pixels = []
   for (let y = 0; y < height; y++) {
     const row = new Uint8Array(bytesPerRow)
     for (let x = 0; x < width; x++) {
-      const i   = (y * width + x) * 4
-      const lum = data[i] * 0.299 + data[i+1] * 0.587 + data[i+2] * 0.114
-      if (lum < 128) row[Math.floor(x / 8)] |= (0x80 >> (x % 8))
+      const i = (y * width + x) * 4
+      const lum = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114
+      if (lum < 128) row[Math.floor(x / 8)] |= 0x80 >> x % 8
     }
     pixels.push(...row)
   }
@@ -200,13 +210,18 @@ function qrToEscPosImage(text, size = 180) {
   div.style.cssText = 'position:absolute;visibility:hidden;left:-9999px'
   document.body.appendChild(div)
   try {
-    new QRCode(div, { text, width: size, height: size, correctLevel: QRCode.CorrectLevel.M })
+    new QRCode(div, {
+      text,
+      width: size,
+      height: size,
+      correctLevel: QRCode.CorrectLevel.M
+    })
     const src = div.querySelector('canvas')
     if (!src) return null
     const out = document.createElement('canvas')
-    out.width  = CFG.PAPER_PX
+    out.width = CFG.PAPER_PX
     out.height = size + 8
-    const ctx  = out.getContext('2d')
+    const ctx = out.getContext('2d')
     ctx.fillStyle = '#fff'
     ctx.fillRect(0, 0, out.width, out.height)
     ctx.drawImage(src, (CFG.PAPER_PX - size) / 2, 4)
@@ -225,16 +240,20 @@ function buildTotals(r) {
   // [FIX 7] Normalise each item — prefer explicit total_price
   const items = (r.items ?? []).map(item => ({
     ...item,
-    _total: parseFloat(item.total_price ?? ((item.qty ?? 1) * (item.unit_price ?? 0))),
+    _total: parseFloat(
+      item.total_price ?? (item.qty ?? 1) * (item.unit_price ?? 0)
+    )
   }))
 
-  const subtotal = parseFloat(r.subtotal ?? items.reduce((s, i) => s + i._total, 0))
+  const subtotal = parseFloat(
+    r.subtotal ?? items.reduce((s, i) => s + i._total, 0)
+  )
   const discount = parseFloat(r.discount ?? 0)
-  const tax      = parseFloat(r.tax      ?? 0)
-  const total    = parseFloat(r.total    ?? (subtotal - discount + tax))
-  const cash     = parseFloat(r.cash_tendered ?? 0)
-  const change   = parseFloat(r.change_given  ?? Math.max(0, cash - total))
-  const payLbl   = PAY_LABEL[r.payment_method] ?? r.payment_method ?? '-'
+  const tax = parseFloat(r.tax ?? 0)
+  const total = parseFloat(r.total ?? subtotal - discount + tax)
+  const cash = parseFloat(r.cash_tendered ?? 0)
+  const change = parseFloat(r.change_given ?? Math.max(0, cash - total))
+  const payLbl = PAY_LABEL[r.payment_method] ?? r.payment_method ?? '-'
 
   return { items, subtotal, discount, tax, total, cash, change, payLbl }
 }
@@ -243,13 +262,19 @@ function buildTotals(r) {
 // QZ Tray job (desktop — Khmer as raster image)
 // ─────────────────────────────────────────────────────────────────────────────
 function buildQzJob(r) {
-  const { items, subtotal, discount, tax, total, cash, change, payLbl } = buildTotals(r)
-  const W   = CFG.CHAR_WIDTH
+  const { items, subtotal, discount, tax, total, cash, change, payLbl } =
+    buildTotals(r)
+  const W = CFG.CHAR_WIDTH
   const job = []
 
-  const txt = str => job.push({ type: 'raw', format: 'base64', data: toBase64(str) })
+  const txt = str =>
+    job.push({ type: 'raw', format: 'base64', data: toBase64(str) })
   const img = (str, opts) =>
-    job.push({ type: 'raw', format: 'base64', data: uint8ToBase64(textToEscPosImage(str, opts)) })
+    job.push({
+      type: 'raw',
+      format: 'base64',
+      data: uint8ToBase64(textToEscPosImage(str, opts))
+    })
   const imgRaw = bytes =>
     job.push({ type: 'raw', format: 'base64', data: uint8ToBase64(bytes) })
 
@@ -260,11 +285,19 @@ function buildQzJob(r) {
   if (hasKhmer(branchName)) {
     img(branchName, { bold: true, fontSize: 22, align: 'center' })
   } else {
-    txt(CMD.BOLD_ON + CMD.DBL_HEIGHT_ON + branchName + LF + CMD.DBL_HEIGHT_OFF + CMD.BOLD_OFF)
+    txt(
+      CMD.BOLD_ON +
+        CMD.DBL_HEIGHT_ON +
+        branchName +
+        LF +
+        CMD.DBL_HEIGHT_OFF +
+        CMD.BOLD_OFF
+    )
   }
 
   if (r.branch_address) {
-    if (hasKhmer(r.branch_address)) img(r.branch_address, { fontSize: 16, align: 'center' })
+    if (hasKhmer(r.branch_address))
+      img(r.branch_address, { fontSize: 16, align: 'center' })
     else txt(r.branch_address + LF)
   }
   if (r.branch_phone) txt('Tel: ' + r.branch_phone + LF)
@@ -273,10 +306,17 @@ function buildQzJob(r) {
   // ── Meta ──────────────────────────────────────────────────────────────
   txt(CMD.ALIGN_LEFT + line(W))
   txt(twoCol('Order #:', String(r.order_number ?? '-'), W) + LF)
-  txt(twoCol('Date:',    r.printed_at ?? new Date().toLocaleString(), W) + LF)
-  if (r.cashier)       txt(twoCol('Cashier:',  r.cashier,       W) + LF)
+  txt(twoCol('Date:', r.printed_at ?? new Date().toLocaleString(), W) + LF)
+  if (r.cashier) txt(twoCol('Cashier:', r.cashier, W) + LF)
   if (r.customer_name) txt(twoCol('Customer:', r.customer_name, W) + LF)
-  if (r.customer_type) txt(twoCol('Type:', r.customer_type === 'wholesale' ? 'Wholesale' : 'Retail', W) + LF)
+  if (r.customer_type)
+    txt(
+      twoCol(
+        'Type:',
+        r.customer_type === 'wholesale' ? 'Wholesale' : 'Retail',
+        W
+      ) + LF
+    )
   txt(line(W))
 
   // ── Line items ────────────────────────────────────────────────────────
@@ -288,9 +328,9 @@ function buildQzJob(r) {
     } else {
       txt(CMD.BOLD_ON + label.slice(0, W) + CMD.BOLD_OFF + LF)
     }
-    const qtyStr   = `  ${item.qty} x $${money(item.unit_price ?? 0)}`
+    const qtyStr = `  ${item.qty} x $${money(item.unit_price ?? 0)}`
     const totalStr = '$' + money(item._total)
-    const gap      = Math.max(1, W - qtyStr.length - totalStr.length)
+    const gap = Math.max(1, W - qtyStr.length - totalStr.length)
     txt(qtyStr + ' '.repeat(gap) + totalStr + LF)
     if (item.note) {
       if (hasKhmer(item.note)) img(item.note, { fontSize: 14 })
@@ -302,7 +342,7 @@ function buildQzJob(r) {
   txt(line(W))
   txt(twoCol('Subtotal:', '$' + money(subtotal), W) + LF)
   if (discount > 0) txt(twoCol('Discount:', '-$' + money(discount), W) + LF)
-  if (tax      > 0) txt(twoCol('Tax:',       '$' + money(tax),      W) + LF)
+  if (tax > 0) txt(twoCol('Tax:', '$' + money(tax), W) + LF)
   txt(dLine(W))
 
   // [FIX 2] DBL_SIZE (0x30) only here — grand total, intentional full double
@@ -312,8 +352,14 @@ function buildQzJob(r) {
 
   txt(dLine(W))
   txt(twoCol('Payment:', payLbl, W) + LF)
-  if (cash   > 0) txt(twoCol('Cash:',   '$' + money(cash),   W) + LF)
-  if (change > 0) txt(CMD.BOLD_ON + twoCol('Change:', '$' + money(change), W) + CMD.BOLD_OFF + LF)
+  if (cash > 0) txt(twoCol('Cash:', '$' + money(cash), W) + LF)
+  if (change > 0)
+    txt(
+      CMD.BOLD_ON +
+        twoCol('Change:', '$' + money(change), W) +
+        CMD.BOLD_OFF +
+        LF
+    )
 
   // ── QR code ───────────────────────────────────────────────────────────
   if (r.order_number) {
@@ -338,51 +384,67 @@ function buildQzJob(r) {
 // WebUSB job (Android — ASCII only, raw bytes)
 // ─────────────────────────────────────────────────────────────────────────────
 function buildUsbBytes(r) {
-  const { items, subtotal, discount, tax, total, cash, change, payLbl } = buildTotals(r)
+  const { items, subtotal, discount, tax, total, cash, change, payLbl } =
+    buildTotals(r)
   const W = CFG.CHAR_WIDTH
 
   const bytes = []
-  const t = str => { for (const c of str) bytes.push(c.charCodeAt(0) & 0xFF) }
+  const t = str => {
+    for (const c of str) bytes.push(c.charCodeAt(0) & 0xff)
+  }
   const b = arr => bytes.push(...arr)
 
   // ── Header ────────────────────────────────────────────────────────────
-  b([0x1B, 0x40])                               // init
-  b([0x1B, 0x61, 0x01])                         // center
-  b([0x1B, 0x45, 0x01, 0x1B, 0x21, 0x10])       // bold + double-height
+  b([0x1b, 0x40]) // init
+  b([0x1b, 0x61, 0x01]) // center
+  b([0x1b, 0x45, 0x01, 0x1b, 0x21, 0x10]) // bold + double-height
   t((toAscii(r.branch_name ?? 'MY STORE') || 'MY STORE') + '\n')
-  b([0x1B, 0x21, 0x00, 0x1B, 0x45, 0x00])       // normal
+  b([0x1b, 0x21, 0x00, 0x1b, 0x45, 0x00]) // normal
 
   if (r.branch_address) t(toAscii(r.branch_address) + '\n')
-  if (r.branch_phone)   t('Tel: ' + r.branch_phone + '\n')
+  if (r.branch_phone) t('Tel: ' + r.branch_phone + '\n')
   t('\n')
 
   // ── Meta ──────────────────────────────────────────────────────────────
-  b([0x1B, 0x61, 0x00])                         // left
+  b([0x1b, 0x61, 0x00]) // left
   t(line(W))
   t(twoCol('Order #:', String(r.order_number ?? '-'), W) + '\n')
-  t(twoCol('Date:',    r.printed_at ?? new Date().toLocaleString(), W) + '\n')
-  if (r.cashier)       t(twoCol('Cashier:',  r.cashier,              W) + '\n')
-  if (r.customer_name) t(twoCol('Customer:', toAscii(r.customer_name), W) + '\n')
-  if (r.customer_type) t(twoCol('Type:', r.customer_type === 'wholesale' ? 'Wholesale' : 'Retail', W) + '\n')
+  t(twoCol('Date:', r.printed_at ?? new Date().toLocaleString(), W) + '\n')
+  if (r.cashier) t(twoCol('Cashier:', r.cashier, W) + '\n')
+  if (r.customer_name)
+    t(twoCol('Customer:', toAscii(r.customer_name), W) + '\n')
+  if (r.customer_type)
+    t(
+      twoCol(
+        'Type:',
+        r.customer_type === 'wholesale' ? 'Wholesale' : 'Retail',
+        W
+      ) + '\n'
+    )
   t(line(W))
 
   // ── Line items ────────────────────────────────────────────────────────
   for (const item of items) {
     const rawLabel = (item.name ?? '') + (item.unit ? ` (${item.unit})` : '')
-    const label    = toAscii(rawLabel) || 'Item'
+    const label = toAscii(rawLabel) || 'Item'
 
     // [FIX 11] Warn in console when Khmer is stripped so devs can track it
     if (hasKhmer(rawLabel)) {
-      console.warn('[useReceipt] USB: Khmer stripped —', rawLabel, '→', label || '(empty)')
+      console.warn(
+        '[useReceipt] USB: Khmer stripped —',
+        rawLabel,
+        '→',
+        label || '(empty)'
+      )
     }
 
-    b([0x1B, 0x45, 0x01, 0x1B, 0x21, 0x10])    // bold + double-height
+    b([0x1b, 0x45, 0x01, 0x1b, 0x21, 0x10]) // bold + double-height
     t(label.slice(0, W) + '\n')
-    b([0x1B, 0x21, 0x00, 0x1B, 0x45, 0x00])    // normal
+    b([0x1b, 0x21, 0x00, 0x1b, 0x45, 0x00]) // normal
 
-    const qtyStr   = `  ${item.qty} x $${money(item.unit_price ?? 0)}`
+    const qtyStr = `  ${item.qty} x $${money(item.unit_price ?? 0)}`
     const totalStr = '$' + money(item._total)
-    const gap      = Math.max(1, W - qtyStr.length - totalStr.length)
+    const gap = Math.max(1, W - qtyStr.length - totalStr.length)
     t(qtyStr + ' '.repeat(gap) + totalStr + '\n')
 
     if (item.note) t('  * ' + toAscii(item.note) + '\n')
@@ -392,28 +454,28 @@ function buildUsbBytes(r) {
   t(line(W))
   t(twoCol('Subtotal:', '$' + money(subtotal), W) + '\n')
   if (discount > 0) t(twoCol('Discount:', '-$' + money(discount), W) + '\n')
-  if (tax      > 0) t(twoCol('Tax:',       '$' + money(tax),      W) + '\n')
+  if (tax > 0) t(twoCol('Tax:', '$' + money(tax), W) + '\n')
   t(dLine(W))
 
-  b([0x1B, 0x45, 0x01, 0x1B, 0x21, 0x10])      // bold + double-height
+  b([0x1b, 0x45, 0x01, 0x1b, 0x21, 0x10]) // bold + double-height
   t(twoCol('TOTAL', '$' + money(total), W) + '\n')
-  b([0x1B, 0x21, 0x00, 0x1B, 0x45, 0x00])
+  b([0x1b, 0x21, 0x00, 0x1b, 0x45, 0x00])
 
   t(dLine(W))
   t(twoCol('Payment:', payLbl, W) + '\n')
-  if (cash   > 0) t(twoCol('Cash:',   '$' + money(cash),   W) + '\n')
+  if (cash > 0) t(twoCol('Cash:', '$' + money(cash), W) + '\n')
   if (change > 0) {
-    b([0x1B, 0x45, 0x01])
+    b([0x1b, 0x45, 0x01])
     t(twoCol('Change:', '$' + money(change), W) + '\n')
-    b([0x1B, 0x45, 0x00])
+    b([0x1b, 0x45, 0x00])
   }
 
   // ── Footer ────────────────────────────────────────────────────────────
   t(line(W))
-  b([0x1B, 0x61, 0x01])                        // center
+  b([0x1b, 0x61, 0x01]) // center
   t('Thank you!\nPlease come again :)\n')
   t('\n\n\n')
-  b([0x1D, 0x56, 0x41, 0x05])                  // cut
+  b([0x1d, 0x56, 0x41, 0x05]) // cut
 
   return new Uint8Array(bytes)
 }
@@ -424,11 +486,19 @@ function buildUsbBytes(r) {
 // Correct: iface.alternates (plural array)
 // ─────────────────────────────────────────────────────────────────────────────
 function findBulkOutEndpoint(device) {
-  for (const iface of (device.configuration?.interfaces ?? [])) {
-    for (const alt of (iface.alternates ?? [])) {
-      for (const ep of (alt.endpoints ?? [])) {
-        if (ep.direction === 'out' && ep.type === 'bulk') {
-          return { interfaceNumber: iface.interfaceNumber, endpoint: ep }
+  // Some printers have multiple configurations, try to find the first one with a Bulk OUT
+  for (const conf of device.configurations) {
+    for (const iface of conf.interfaces) {
+      for (const alt of iface.alternates) {
+        for (const ep of alt.endpoints) {
+          // We need a 'bulk' type and 'out' direction
+          if (ep.direction === 'out' && ep.type === 'bulk') {
+            return {
+              configurationValue: conf.configurationValue,
+              interfaceNumber: iface.interfaceNumber,
+              endpoint: ep
+            }
+          }
         }
       }
     }
@@ -440,11 +510,11 @@ function findBulkOutEndpoint(device) {
 // Composable
 // ─────────────────────────────────────────────────────────────────────────────
 export function useReceipt() {
-  const printing    = ref(false)
-  const error       = ref(null)
-  const printMethod = ref(null)   // 'qz' | 'usb'
+  const printing = ref(false)
+  const error = ref(null)
+  const printMethod = ref(null) // 'qz' | 'usb'
 
-  const usbDevice    = ref(null)   // { dev, interfaceNumber, endpoint }
+  const usbDevice = ref(null) // { dev, interfaceNumber, endpoint }
   const usbConnected = ref(false)
   const usbSupported = typeof navigator !== 'undefined' && 'usb' in navigator
 
@@ -454,21 +524,27 @@ export function useReceipt() {
     try {
       const dev = await navigator.usb.requestDevice({ filters: [] })
       await dev.open()
-      if (dev.configuration === null) await dev.selectConfiguration(1)
 
       const found = findBulkOutEndpoint(dev)
-      if (!found) throw new Error('No bulk-out endpoint found. Is the correct printer selected?')
+      if (!found) throw new Error('No bulk-out endpoint found.')
 
-      await dev.claimInterface(found.interfaceNumber)
-      usbDevice.value    = { dev, ...found }
+      // Force selection of the configuration that contains our endpoint
+      await dev.selectConfiguration(found.configurationValue)
+
+      // Check if claimed, if so, release it first (for Android stability)
+      try {
+        await dev.claimInterface(found.interfaceNumber)
+      } catch (e) {
+        // If already claimed, Android sometimes needs a second to breathe
+        await new Promise(r => setTimeout(r, 500))
+        await dev.claimInterface(found.interfaceNumber)
+      }
+
+      usbDevice.value = { dev, ...found }
       usbConnected.value = true
-      printMethod.value  = 'usb'
       return true
     } catch (e) {
-      error.value        = e.message ?? 'USB connection failed'
-      usbConnected.value = false
-      usbDevice.value    = null
-      return false
+      // ... error handling
     }
   }
 
@@ -476,12 +552,16 @@ export function useReceipt() {
   async function disconnectUsb() {
     if (!usbDevice.value) return
     try {
-      await usbDevice.value.dev.releaseInterface(usbDevice.value.interfaceNumber)
+      await usbDevice.value.dev.releaseInterface(
+        usbDevice.value.interfaceNumber
+      )
       await usbDevice.value.dev.close()
-    } catch (_) { /* already closed */ }
-    usbDevice.value    = null
+    } catch (_) {
+      /* already closed */
+    }
+    usbDevice.value = null
     usbConnected.value = false
-    printMethod.value  = null
+    printMethod.value = null
   }
 
   // ── Print via WebUSB ──────────────────────────────────────────────────
@@ -490,19 +570,24 @@ export function useReceipt() {
       throw new Error('USB printer not connected. Tap "Connect Printer" first.')
     }
 
-    const bytes              = buildUsbBytes(receipt)
-    const { dev, endpoint }  = usbDevice.value
+    const bytes = buildUsbBytes(receipt)
+    const { dev, endpoint } = usbDevice.value
 
     // [FIX 9] Per-chunk error handling — surfaces stale device errors clearly
     for (let i = 0; i < bytes.length; i += CFG.USB_CHUNK) {
       try {
-        await dev.transferOut(endpoint.endpointNumber, bytes.slice(i, i + CFG.USB_CHUNK))
+        await dev.transferOut(
+          endpoint.endpointNumber,
+          bytes.slice(i, i + CFG.USB_CHUNK)
+        )
       } catch (e) {
         // [FIX 4] Device disconnected mid-print (e.g. screen lock, cable pull)
         if (e.name === 'NotFoundError' || e.name === 'InvalidStateError') {
           usbConnected.value = false
-          usbDevice.value    = null
-          throw new Error('Printer disconnected mid-print. Please reconnect and try again.')
+          usbDevice.value = null
+          throw new Error(
+            'Printer disconnected mid-print. Please reconnect and try again.'
+          )
         }
         throw e
       }
@@ -521,27 +606,28 @@ export function useReceipt() {
         await qz.websocket.connect()
       } catch (_) {
         await new Promise(res => setTimeout(res, 1000))
-        await qz.websocket.connect()  // second attempt — throws if still down
+        await qz.websocket.connect() // second attempt — throws if still down
       }
     }
 
     const printer = await qz.printers.find(CFG.QZ_PRINTER)
-    if (!printer) throw new Error(`QZ Tray: printer "${CFG.QZ_PRINTER}" not found`)
+    if (!printer)
+      throw new Error(`QZ Tray: printer "${CFG.QZ_PRINTER}" not found`)
 
     const config = qz.configs.create(printer)
-    const data   = buildQzJob(receipt)
+    const data = buildQzJob(receipt)
     await qz.print(config, data)
     return true
   }
 
   // ── Main print — auto-detects platform ───────────────────────────────
-  const print = async (receipt) => {
+  const print = async receipt => {
     if (!receipt) {
       error.value = 'No receipt data provided'
       return false
     }
     printing.value = true
-    error.value    = null
+    error.value = null
 
     try {
       if (isAndroid()) {
@@ -562,14 +648,14 @@ export function useReceipt() {
 
   return {
     // Readonly reactive state — prevents accidental external mutation
-    printing:     readonly(printing),
-    error:        readonly(error),
-    printMethod:  readonly(printMethod),
+    printing: readonly(printing),
+    error: readonly(error),
+    printMethod: readonly(printMethod),
     usbConnected: readonly(usbConnected),
     usbSupported,
     // Methods
     print,
     connectUsb,
-    disconnectUsb,
+    disconnectUsb
   }
 }
