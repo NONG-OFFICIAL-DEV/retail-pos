@@ -45,6 +45,58 @@ const PAY_LABEL = {
   transfer: 'ផ្ទេរប្រាក់ / Transfer'
 }
 
+// ── Auto-reconnect to a previously paired USB printer ─────────────────────
+async function autoConnectUsb() {
+  try {
+    const devices = await navigator.usb.getDevices()
+    if (!devices.length) return false
+    const dev = devices[0]
+    await dev.open()
+    if (dev.configuration === null) await dev.selectConfiguration(1)
+    const found = findBulkOutEndpoint(dev)
+    if (!found) return false
+    await dev.claimInterface(found.interfaceNumber)
+    usbDevice.value = { dev, ...found }
+    usbConnected.value = true
+    printMethod.value = 'usb'
+    return true
+  } catch (e) {
+    console.warn('[useReceipt] autoConnectUsb failed:', e.message)
+    return false
+  }
+}
+
+// ── Print via WebUSB ──────────────────────────────────────────────────────
+async function printUsb(receipt, _retry = false) {
+  if (!usbConnected.value || !usbDevice.value) {
+    const reconnected = await autoConnectUsb()
+    if (!reconnected) {
+      error.value = 'USB printer not connected. Tap "Connect Printer" first.'
+      return false
+    }
+  }
+  const bytes = buildBytes(receipt)
+  const CHUNK = 64
+  try {
+    for (let i = 0; i < bytes.length; i += CHUNK) {
+      await usbDevice.value.dev.transferOut(
+        usbDevice.value.endpoint.endpointNumber,
+        bytes.slice(i, i + CHUNK)
+      )
+    }
+    return true
+  } catch (e) {
+    usbConnected.value = false
+    usbDevice.value = null
+    if (!_retry) {
+      console.warn('[useReceipt] USB error, retrying once...', e.message)
+      await new Promise(r => setTimeout(r, 600))
+      return printUsb(receipt, true)
+    }
+    error.value = 'Printer disconnected. Please reconnect and try again.'
+    return false
+  }
+}
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
@@ -54,13 +106,6 @@ const money = v =>
 
 const hasKhmer = s => /[\u1780-\u17FF]/.test(s)
 const isAndroid = () => /android/i.test(navigator.userAgent)
-const pad = (s, n) => {
-  const str = String(s)
-  const len = [...str].length
-  const spaces = Math.max(n - len, 0)
-  return str + ' '.repeat(spaces)
-}
-
 const twoCol = (l, r, w = CHAR_WIDTH) => {
   const gap = Math.max(1, w - l.length - r.length)
   return l + ' '.repeat(gap) + r
@@ -319,7 +364,7 @@ function buildBytes(r) {
 
   // Render Header as an image so it matches the rows exactly
   b(
-    tableRowToEscPosImage(['Name', 'Qty', 'Total'], {
+    tableRowToEscPosImage(['Name/ឈ្មោះ', 'Qty/ចំនួន', 'Total/សរុប'], {
       bold: true,
       fontSize: 18
     })
@@ -336,7 +381,7 @@ function buildBytes(r) {
     // Pass marginTop: 15 for a nice gap between items
     b(
       tableRowToEscPosImage([label, qtyStr, totalAmt], {
-        fontSize: 20,
+        fontSize: 24,
         marginTop: 15
       })
     )
@@ -362,7 +407,7 @@ function buildBytes(r) {
   b(
     totalsRowToEscPosImage('Total / សរុបទាំងអស់:', money(total), {
       bold: true,
-      fontSize: 24,
+      fontSize: 26,
       marginTop: 12
     })
   )
@@ -475,21 +520,21 @@ export function useReceipt() {
   }
 
   // ── Print via WebUSB ──────────────────────────────────────────────────────
-  async function printUsb(receipt) {
-    if (!usbConnected.value || !usbDevice.value) {
-      error.value = 'USB printer not connected. Tap "Connect Printer" first.'
-      return false
-    }
-    const bytes = buildBytes(receipt) // same builder as QZ Tray!
-    const CHUNK = 64
-    for (let i = 0; i < bytes.length; i += CHUNK) {
-      await usbDevice.value.dev.transferOut(
-        usbDevice.value.endpoint.endpointNumber,
-        bytes.slice(i, i + CHUNK)
-      )
-    }
-    return true
-  }
+  // async function printUsb(receipt) {
+  //   if (!usbConnected.value || !usbDevice.value) {
+  //     error.value = 'USB printer not connected. Tap "Connect Printer" first.'
+  //     return false
+  //   }
+  //   const bytes = buildBytes(receipt) // same builder as QZ Tray!
+  //   const CHUNK = 64
+  //   for (let i = 0; i < bytes.length; i += CHUNK) {
+  //     await usbDevice.value.dev.transferOut(
+  //       usbDevice.value.endpoint.endpointNumber,
+  //       bytes.slice(i, i + CHUNK)
+  //     )
+  //   }
+  //   return true
+  // }
 
   // ── Print via QZ Tray ─────────────────────────────────────────────────────
   async function printQz(receipt) {
@@ -536,6 +581,7 @@ export function useReceipt() {
     usbSupported,
     print,
     connectUsb,
-    disconnectUsb
+    disconnectUsb,
+    autoConnectUsb
   }
 }
