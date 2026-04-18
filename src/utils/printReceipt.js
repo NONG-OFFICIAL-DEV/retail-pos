@@ -45,58 +45,6 @@ const PAY_LABEL = {
   transfer: 'ផ្ទេរប្រាក់ / Transfer'
 }
 
-// ── Auto-reconnect to a previously paired USB printer ─────────────────────
-async function autoConnectUsb() {
-  try {
-    const devices = await navigator.usb.getDevices()
-    if (!devices.length) return false
-    const dev = devices[0]
-    await dev.open()
-    if (dev.configuration === null) await dev.selectConfiguration(1)
-    const found = findBulkOutEndpoint(dev)
-    if (!found) return false
-    await dev.claimInterface(found.interfaceNumber)
-    usbDevice.value = { dev, ...found }
-    usbConnected.value = true
-    printMethod.value = 'usb'
-    return true
-  } catch (e) {
-    console.warn('[useReceipt] autoConnectUsb failed:', e.message)
-    return false
-  }
-}
-
-// ── Print via WebUSB ──────────────────────────────────────────────────────
-async function printUsb(receipt, _retry = false) {
-  if (!usbConnected.value || !usbDevice.value) {
-    const reconnected = await autoConnectUsb()
-    if (!reconnected) {
-      error.value = 'USB printer not connected. Tap "Connect Printer" first.'
-      return false
-    }
-  }
-  const bytes = buildBytes(receipt)
-  const CHUNK = 64
-  try {
-    for (let i = 0; i < bytes.length; i += CHUNK) {
-      await usbDevice.value.dev.transferOut(
-        usbDevice.value.endpoint.endpointNumber,
-        bytes.slice(i, i + CHUNK)
-      )
-    }
-    return true
-  } catch (e) {
-    usbConnected.value = false
-    usbDevice.value = null
-    if (!_retry) {
-      console.warn('[useReceipt] USB error, retrying once...', e.message)
-      await new Promise(r => setTimeout(r, 600))
-      return printUsb(receipt, true)
-    }
-    error.value = 'Printer disconnected. Please reconnect and try again.'
-    return false
-  }
-}
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
@@ -520,21 +468,21 @@ export function useReceipt() {
   }
 
   // ── Print via WebUSB ──────────────────────────────────────────────────────
-  // async function printUsb(receipt) {
-  //   if (!usbConnected.value || !usbDevice.value) {
-  //     error.value = 'USB printer not connected. Tap "Connect Printer" first.'
-  //     return false
-  //   }
-  //   const bytes = buildBytes(receipt) // same builder as QZ Tray!
-  //   const CHUNK = 64
-  //   for (let i = 0; i < bytes.length; i += CHUNK) {
-  //     await usbDevice.value.dev.transferOut(
-  //       usbDevice.value.endpoint.endpointNumber,
-  //       bytes.slice(i, i + CHUNK)
-  //     )
-  //   }
-  //   return true
-  // }
+  async function printUsb(receipt) {
+    if (!usbConnected.value || !usbDevice.value) {
+      error.value = 'USB printer not connected. Tap "Connect Printer" first.'
+      return false
+    }
+    const bytes = buildBytes(receipt) // same builder as QZ Tray!
+    const CHUNK = 64
+    for (let i = 0; i < bytes.length; i += CHUNK) {
+      await usbDevice.value.dev.transferOut(
+        usbDevice.value.endpoint.endpointNumber,
+        bytes.slice(i, i + CHUNK)
+      )
+    }
+    return true
+  }
 
   // ── Print via QZ Tray ─────────────────────────────────────────────────────
   async function printQz(receipt) {
@@ -581,7 +529,6 @@ export function useReceipt() {
     usbSupported,
     print,
     connectUsb,
-    disconnectUsb,
-    autoConnectUsb
+    disconnectUsb
   }
 }

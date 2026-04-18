@@ -62,6 +62,7 @@
                   :model-value="item.qty"
                   density="compact"
                   small
+                  :min="0"
                   @update:model-value="
                     val => emit('update-qty', item._key, val)
                   "

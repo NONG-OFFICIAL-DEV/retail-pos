@@ -12,9 +12,6 @@
   import Notif from '@/components/global/Notification.vue'
   import Confirm from '@/components/global/Confirm.vue'
   import Loading from '@/components/global/Loading.vue'
-  import { useReceipt } from '@/utils/printReceipt'
-
-  const { autoConnectUsb, usbSupported } = useReceipt()
 
   // Refs to components
   const notifRef = ref(null)
@@ -35,7 +32,6 @@
     if (savedLang) {
       instance.appContext.config.globalProperties.$i18n.locale = savedLang
     }
-    if (usbSupported) autoConnectUsb() // silently reconnects if printer was paired before
   })
 </script>
 
