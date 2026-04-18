@@ -74,5 +74,9 @@
   },
   "product": {
     "all_product": "All Product"
+  },
+  "printer": {
+    "not_connected": "Please connect the printer before checkout.",
+    "disconnected": "Printer disconnected. Please reconnect and try again."
   }
 }

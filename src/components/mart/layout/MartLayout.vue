@@ -77,7 +77,7 @@
 </template>
 
 <script setup>
-  import { ref, nextTick, watch } from 'vue'
+  import { ref, watch } from 'vue'
   import { useMartPos } from '@/composables/useMartPos'
   import MartAppBar from '@/components/mart/layout/MartAppBar.vue'
   import MartCartDrawer from '@/components/mart/layout/MartCartDrawer.vue'
@@ -90,14 +90,13 @@
   import { useI18n } from 'vue-i18n'
   import { useReceipt } from '@/utils/printReceipt'
   import { formatKHR } from '@nong-official-dev/core'
-  import api from '../../../api/api'
 
   const { t } = useI18n()
-  const { notif } = useAppUtils()
+  const { notif, confirm } = useAppUtils()
 
   const {
     printing,
-    error, // ← make sure this is destructured
+    error,
     print,
     connectUsb,
     disconnectUsb,
@@ -112,29 +111,37 @@
 
   const receipt = ref(null)
   const cashDialog = ref(false)
-  const printDialog = ref(false) // ← new: controls print receipt dialog
+  const printDialog = ref(false)
 
-  // ── Watch for print errors and alert user ────────────────────────────────
+  // ── Android printer check ─────────────────────────────────────────────────
+  const isAndroid = () => /android/i.test(navigator.userAgent)
+
+  const checkPrinterBeforeCheckout = () => {
+    if (isAndroid() && usbSupported && !usbConnected.value) {
+      notif(t('printer.not_connected') || 'Please connect the printer first.', {
+        type: 'warning'
+      })
+      return false
+    }
+    return true
+  }
+
+  // ── Watch for print errors ────────────────────────────────────────────────
   watch(error, val => {
     if (!val) return
     if (val === 'not_connected') {
-      notif(
-        'Printer not connected. Tap "Connect Printer" in the footer first.',
-        {
-          type: 'warning'
-        }
-      )
+      notif(t('printer.not_connected'), {
+        type: 'warning'
+      })
     } else if (val === 'disconnected') {
-      notif(
-        'Printer disconnected during print. Please reconnect and try again.',
-        {
-          type: 'error'
-        }
-      )
+      notif(t('printer.disconnected'), {
+        type: 'error'
+      })
     } else {
       notif(val, { type: 'error' })
     }
   })
+
   const logout = async () => {
     await authStore.logout()
     router.push({ name: 'Login' })
@@ -143,12 +150,8 @@
   const processCheckout = async (extraPayload = {}) => {
     try {
       const data = await martStore.checkout(extraPayload)
-
       receipt.value = data.receipt
-      notif('Order placed successfully', { type: 'success' })
-
-      // ✅ Show print dialog instead of calling print() directly
-      // User will tap "Print Receipt" button → direct gesture → share works!
+      notif(t('notification.orderPlaced'), { type: 'success' })
       printDialog.value = true
     } catch (err) {
       console.error(err)
@@ -156,24 +159,22 @@
     }
   }
 
-  // ✅ Called directly from button tap — gesture is valid here
-  // const handlePrint = async () => {
-  //   const data = JSON.parse(JSON.stringify(receipt.value))
-  //   closePrintDialog()
-  //   await api.post('/print-receipt', data)
-  // }
   const handlePrint = async () => {
     if (!receipt.value) return
     const data = JSON.parse(JSON.stringify(receipt.value))
     const ok = await print(data)
     if (ok) closePrintDialog()
   }
+
   const closePrintDialog = () => {
     printDialog.value = false
     receipt.value = null
   }
 
+  // ── Checkout — check printer first on Android ─────────────────────────────
   const completeOrder = async () => {
+    if (!checkPrinterBeforeCheckout()) return  // ← stop if not connected
+
     if (cart.value?.paymentMethod === 'cash') {
       cashDialog.value = true
       return
@@ -182,6 +183,8 @@
   }
 
   const confirmCashPayment = async ({ cash_received, change }) => {
+    if (!checkPrinterBeforeCheckout()) return  // ← stop if not connected
+
     cashDialog.value = false
     await processCheckout({
       cash_tendered: cash_received,
