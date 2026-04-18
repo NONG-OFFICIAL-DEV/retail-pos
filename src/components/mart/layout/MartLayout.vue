@@ -77,7 +77,7 @@
 </template>
 
 <script setup>
-  import { ref, nextTick } from 'vue'
+  import { ref, nextTick, watch } from 'vue'
   import { useMartPos } from '@/composables/useMartPos'
   import MartAppBar from '@/components/mart/layout/MartAppBar.vue'
   import MartCartDrawer from '@/components/mart/layout/MartCartDrawer.vue'
@@ -97,12 +97,13 @@
 
   const {
     printing,
-    print, // same as before — call this to print
-    connectUsb, // Android only — call once to pair USB printer
-    disconnectUsb, // Android only — unpair
-    usbConnected, // ref — true when USB printer is paired
-    usbSupported, // bool — is WebUSB available
-    printMethod // 'qz' or 'usb'
+    error, // ← make sure this is destructured
+    print,
+    connectUsb,
+    disconnectUsb,
+    usbConnected,
+    usbSupported,
+    printMethod
   } = useReceipt()
 
   const martStore = useMartStore()
@@ -113,6 +114,27 @@
   const cashDialog = ref(false)
   const printDialog = ref(false) // ← new: controls print receipt dialog
 
+  // ── Watch for print errors and alert user ────────────────────────────────
+  watch(error, val => {
+    if (!val) return
+    if (val === 'not_connected') {
+      notif(
+        'Printer not connected. Tap "Connect Printer" in the footer first.',
+        {
+          type: 'warning'
+        }
+      )
+    } else if (val === 'disconnected') {
+      notif(
+        'Printer disconnected during print. Please reconnect and try again.',
+        {
+          type: 'error'
+        }
+      )
+    } else {
+      notif(val, { type: 'error' })
+    }
+  })
   const logout = async () => {
     await authStore.logout()
     router.push({ name: 'Login' })
@@ -143,8 +165,8 @@
   const handlePrint = async () => {
     if (!receipt.value) return
     const data = JSON.parse(JSON.stringify(receipt.value))
-    closePrintDialog()
-    await print(data) // useReceipt handles QZ Tray
+    const ok = await print(data)
+    if (ok) closePrintDialog()
   }
   const closePrintDialog = () => {
     printDialog.value = false
