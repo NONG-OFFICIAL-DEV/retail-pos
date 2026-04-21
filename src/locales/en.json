@@ -12,7 +12,8 @@
     "pay": "Pay",
     "delete": "Delete",
     "print_receipt": "Print Receipt",
-    "skip": "Skip"
+    "skip": "Skip",
+    "add_exchange": "Add Exchange"
   },
   "common": {
     "search": "Search dishes, drinks...",
@@ -34,7 +35,8 @@
     "only": "Only",
     "out_of_stock": "Out of Stock",
     "low_stock": "Low stock · {qty} {unit} left",
-    "in_stock": "In stock · {qty} {unit}"
+    "in_stock": "In stock · {qty} {unit}",
+    "exceeds_stock": "The quantity exceeds available stock"
   },
   "lang": {
     "km": "Khmer",
@@ -78,5 +80,34 @@
   "printer": {
     "not_connected": "Please connect the printer before checkout.",
     "disconnected": "Printer disconnected. Please reconnect and try again."
+  },
+  "lid_exchange": {
+    "title": "Lid Exchange",
+    "subtitle": "Customer trades can lid + top-up for a new drink",
+    "select_drink": "Select Drink",
+    "search_placeholder": "Search drink...",
+    "topup_per_can": "Top-up per Can",
+    "custom_topup": "Enter custom amount",
+    "custom_topup_hint": "Or enter a custom top-up amount above",
+    "confirm_exchange": "Confirm Exchange",
+    "confirm_title": "Confirm Exchange?",
+    "confirm_hint": "Please physically collect the lid from the customer before confirming.",
+    "success_title": "Exchange Complete!",
+    "success_desc": "{qty} × {name} given to customer.",
+    "lids_collected": "Lids Collected",
+    "lids": "lid(s)",
+    "lid_count": "Lid Count",
+    "cans_given": "Cans Given",
+    "can": "can",
+    "new_exchange": "New Exchange",
+    "lid_count_hint": "1 can is exchanged for 1 lid"
+  },
+  "payment": {
+    "cash": "Cash",
+    "qr": "QR",
+    "card": "Card",
+    "transfer": "Transfer",
+    "cash_tendered": "Cash Tendered",
+    "change": "Change"
   }
 }

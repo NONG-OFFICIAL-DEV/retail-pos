@@ -14,7 +14,6 @@
           <div class="text-body-1 font-weight-black text-truncate">
             {{ product?.name }}
           </div>
-          <!-- Stock display with color indicator -->
           <div class="d-flex align-center gap-1 mt-1">
             <v-icon :icon="stockIcon" :color="stockColor" size="13" />
             <span class="text-caption" :class="`text-${stockColor}`">
@@ -34,7 +33,6 @@
 
       <v-card-text class="pa-4">
         <!-- ── Stock alerts ─────────────────────────────────────────────── -->
-        <!-- Out of stock -->
         <v-alert
           v-if="isOutOfStock"
           type="error"
@@ -44,11 +42,10 @@
           class="mb-4"
           icon="mdi-alert-circle-outline"
         >
-          <strong>Out of stock.</strong>
-          Cannot add to cart.
+          <strong>{{ t('common.out_of_stock') }}.</strong>
+          {{ t('common.cannot_add') }}
         </v-alert>
 
-        <!-- Low stock warning -->
         <v-alert
           v-else-if="isLowStock"
           type="warning"
@@ -62,10 +59,10 @@
           <strong>
             {{ fmtQty(product.stock_quantity) }} {{ product.unit ?? 'pcs' }}
           </strong>
-          left in stock.
+          {{ t('common.left_in_stock') }}
         </v-alert>
 
-        <!-- Customer type toggle -->
+        <!-- ── Customer type toggle (3 options) ────────────────────────── -->
         <div class="d-flex align-center justify-space-between mb-4">
           <span class="text-caption font-weight-bold text-medium-emphasis">
             {{ t('unit.customer_type') }}
@@ -76,125 +73,25 @@
             density="compact"
             rounded="lg"
             variant="outlined"
-            @update:modelValue="martStore.setCustomerType($event)"
           >
-            <v-btn value="retail" size="small" class="text-none px-4">
+            <v-btn value="retail" size="small" class="text-none px-3">
               {{ t('unit.retail') }}
             </v-btn>
-            <v-btn value="wholesale" size="small" class="text-none px-4">
+            <v-btn value="wholesale" size="small" class="text-none px-3">
               {{ t('unit.wholsale') }}
+            </v-btn>
+            <v-btn value="lid_exchange" size="small" class="text-none px-3">
+              {{ t('lid_exchange.title') }}
             </v-btn>
           </v-btn-toggle>
         </div>
 
-        <!-- No units -->
-        <template v-if="!hasUnits">
-          <div class="text-caption font-weight-bold text-medium-emphasis mb-2">
-            {{ t('common.quantity') }}
-          </div>
-          <div class="d-flex align-center gap-3">
-            <v-btn
-              icon="mdi-minus"
-              variant="tonal"
-              size="small"
-              rounded="lg"
-              :disabled="qty <= 1"
-              @click="qty--"
-            />
-            <v-text-field
-              v-model.number="qty"
-              type="number"
-              min="1"
-              variant="outlined"
-              density="compact"
-              rounded="lg"
-              hide-details
-              class="text-center"
-              style="max-width: 80px"
-            />
-            <v-btn
-              icon="mdi-plus"
-              variant="tonal"
-              size="small"
-              rounded="lg"
-              :disabled="qty >= maxQtyNoUnit"
-              @click="qty++"
-            />
-            <div class="text-body-1 font-weight-black text-primary ml-auto">
-              {{ formatKHR(unitPrice * qty) }}
-            </div>
-          </div>
-          <!-- Exceeds stock warning -->
-          <div v-if="qty > maxQtyNoUnit" class="text-caption text-error mt-2">
-            <v-icon icon="mdi-alert-circle-outline" size="13" class="mr-1" />
-            Exceeds available stock ({{ fmtQty(product.stock_quantity) }})
-          </div>
-        </template>
-
-        <!-- Has units -->
-        <template v-else>
-          <div class="text-caption font-weight-bold text-medium-emphasis mb-2">
-            {{ t('unit.select_unit') }}
-          </div>
-          <div class="d-flex flex-column gap-2 mb-4">
-            <v-card
-              v-for="unit in sortedUnits"
-              :key="unit.id"
-              flat
-              border
-              rounded="lg"
-              class="pa-3 cursor-pointer unit-card"
-              :class="{ 'selected-unit': selectedUnit?.id === unit.id }"
-              @click="selectUnit(unit)"
-            >
-              <div class="d-flex align-center justify-space-between">
-                <div>
-                  <div class="text-body-2 font-weight-bold">
-                    <strong>{{ unit.qty_per_base }}</strong>
-                    x {{ unit.unit_label || unit.unit_name }}
-                  </div>
-                  <!-- Max available in this unit -->
-                  <div
-                    class="text-caption"
-                    :class="
-                      maxForUnit(unit) <= 0
-                        ? 'text-error'
-                        : 'text-medium-emphasis'
-                    "
-                  >
-                    {{ t('common.max') }}: {{ maxForUnit(unit) }}
-                    {{ unit.unit_label ?? unit.unit_name }}
-                    {{ t('common.available') }}
-                  </div>
-                </div>
-                <div class="text-right">
-                  <div class="text-body-1 font-weight-black text-primary">
-                    {{ formatKHR(unitPriceFor(unit)) }}
-                  </div>
-                  <div
-                    v-if="customerType === 'wholesale' && unit.wholesale_price"
-                    class="text-caption text-success"
-                  >
-                    {{ t('unit.wholsale') }}
-                  </div>
-                  <!-- Out of stock badge on unit -->
-                  <v-chip
-                    v-if="maxForUnit(unit) <= 0"
-                    size="x-small"
-                    color="error"
-                    variant="tonal"
-                    rounded="lg"
-                    class="mt-1"
-                  >
-                    {{ t('common.out_of_stock') }}
-                  </v-chip>
-                </div>
-              </div>
-            </v-card>
-          </div>
-
-          <!-- Qty for selected unit -->
-          <div v-if="selectedUnit">
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- MODE A: Normal sale (retail / wholesale)                       -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <template v-if="!isLidExchange">
+          <!-- No units -->
+          <template v-if="!hasUnits">
             <div
               class="text-caption font-weight-bold text-medium-emphasis mb-2"
             >
@@ -225,25 +122,155 @@
                 variant="tonal"
                 size="small"
                 rounded="lg"
-                :disabled="qty >= maxForUnit(selectedUnit)"
+                :disabled="qty >= maxQtyNoUnit"
                 @click="qty++"
               />
               <div class="text-body-1 font-weight-black text-primary ml-auto">
-                {{ formatKHR(unitPriceFor(selectedUnit) * qty) }}
+                {{ formatKHR(unitPrice * qty) }}
               </div>
             </div>
-
-            <!-- Exceeds stock warning -->
-            <div
-              v-if="qty > maxForUnit(selectedUnit)"
-              class="text-caption text-error mt-2"
-            >
+            <div v-if="qty > maxQtyNoUnit" class="text-caption text-error mt-2">
               <v-icon icon="mdi-alert-circle-outline" size="13" class="mr-1" />
-              {{ t('common.only') }} {{ maxForUnit(selectedUnit) }}
-              {{ selectedUnit.unit_label ?? selectedUnit.unit_name }}
-              {{ t('common.available') }}
+              {{ t('common.exceeds_stock') }} ({{
+                fmtQty(product.stock_quantity)
+              }})
             </div>
-          </div>
+          </template>
+
+          <!-- Has units -->
+          <template v-else>
+            <div
+              class="text-caption font-weight-bold text-medium-emphasis mb-2"
+            >
+              {{ t('unit.select_unit') }}
+            </div>
+            <div class="d-flex flex-column gap-2 mb-4">
+              <v-card
+                v-for="unit in sortedUnits"
+                :key="unit.id"
+                flat
+                border
+                rounded="lg"
+                class="pa-3 cursor-pointer unit-card"
+                :class="{ 'selected-unit': selectedUnit?.id === unit.id }"
+                @click="selectUnit(unit)"
+              >
+                <div class="d-flex align-center justify-space-between">
+                  <div>
+                    <div class="text-body-2 font-weight-bold">
+                      <strong>{{ unit.qty_per_base }}</strong>
+                      x {{ unit.unit_label || unit.unit_name }}
+                    </div>
+                    <div
+                      class="text-caption"
+                      :class="
+                        maxForUnit(unit) <= 0
+                          ? 'text-error'
+                          : 'text-medium-emphasis'
+                      "
+                    >
+                      {{ t('common.max') }}: {{ maxForUnit(unit) }}
+                      {{ unit.unit_label ?? unit.unit_name }}
+                      {{ t('common.available') }}
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <div class="text-body-1 font-weight-black text-primary">
+                      {{ formatKHR(unitPriceFor(unit)) }}
+                    </div>
+                    <div
+                      v-if="
+                        customerType === 'wholesale' && unit.wholesale_price
+                      "
+                      class="text-caption text-success"
+                    >
+                      {{ t('unit.wholsale') }}
+                    </div>
+                    <v-chip
+                      v-if="maxForUnit(unit) <= 0"
+                      size="x-small"
+                      color="error"
+                      variant="tonal"
+                      rounded="lg"
+                      class="mt-1"
+                    >
+                      {{ t('common.out_of_stock') }}
+                    </v-chip>
+                  </div>
+                </div>
+              </v-card>
+            </div>
+
+            <!-- Qty for selected unit -->
+            <div v-if="selectedUnit">
+              <div
+                class="text-caption font-weight-bold text-medium-emphasis mb-2"
+              >
+                {{ t('common.quantity') }}
+              </div>
+              <div class="d-flex align-center gap-3">
+                <v-btn
+                  icon="mdi-minus"
+                  variant="tonal"
+                  size="small"
+                  rounded="lg"
+                  :disabled="qty <= 1"
+                  @click="qty--"
+                />
+                <v-text-field
+                  v-model.number="qty"
+                  type="number"
+                  min="1"
+                  variant="outlined"
+                  density="compact"
+                  rounded="lg"
+                  hide-details
+                  class="text-center"
+                  style="max-width: 80px"
+                />
+                <v-btn
+                  icon="mdi-plus"
+                  variant="tonal"
+                  size="small"
+                  rounded="lg"
+                  :disabled="qty >= maxForUnit(selectedUnit)"
+                  @click="qty++"
+                />
+                <div class="text-body-1 font-weight-black text-primary ml-auto">
+                  {{ formatKHR(unitPriceFor(selectedUnit) * qty) }}
+                </div>
+              </div>
+              <div
+                v-if="qty > maxForUnit(selectedUnit)"
+                class="text-caption text-error mt-2"
+              >
+                <v-icon
+                  icon="mdi-alert-circle-outline"
+                  size="13"
+                  class="mr-1"
+                />
+                {{ t('common.only') }} {{ maxForUnit(selectedUnit) }}
+                {{ selectedUnit.unit_label ?? selectedUnit.unit_name }}
+                {{ t('common.available') }}
+              </div>
+            </div>
+          </template>
+        </template>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- MODE B: Lid Exchange                                           -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <template v-else>
+          <LidExchangeSection
+            v-model:qty="qty"
+            v-model:topupPreset="topupPreset"
+            v-model:customTopup="customTopup"
+            :selected-unit="selectedUnit"
+            :sorted-units="sortedUnits"
+            :has-units="hasUnits"
+            :stock-qty="stockQty"
+            @select-unit="selectUnit"
+          />
         </template>
       </v-card-text>
 
@@ -253,7 +280,10 @@
         <v-btn variant="tonal" rounded="lg" @click="model = false">
           {{ t('btn.cancel') }}
         </v-btn>
+
+        <!-- Normal sale button -->
         <v-btn
+          v-if="!isLidExchange"
           color="primary"
           variant="flat"
           rounded="lg"
@@ -263,6 +293,20 @@
           @click="addToCart"
         >
           {{ t('btn.add_to_cart') }}
+        </v-btn>
+
+        <!-- Lid exchange button -->
+        <v-btn
+          v-else
+          color="warning"
+          variant="flat"
+          rounded="lg"
+          class="flex-grow-1"
+          prepend-icon="mdi-swap-horizontal"
+          :disabled="!canAddLidExchange"
+          @click="addToCart"
+        >
+          {{ t('btn.add_exchange') }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -274,8 +318,11 @@
   import { useI18n } from 'vue-i18n'
   import { formatKHR } from '@nong-official-dev/core'
   import { useMartStore } from '@/stores/martStore'
+  import LidExchangeSection from './LidExchangeSection.vue'
+
   const { t } = useI18n()
   const martStore = useMartStore()
+
   const props = defineProps({
     modelValue: { type: Boolean, default: false },
     product: { type: Object, default: null },
@@ -287,18 +334,30 @@
     get: () => props.modelValue,
     set: v => emit('update:modelValue', v)
   })
+
+  // ── Local state ────────────────────────────────────────────────────────────
   const qty = ref(1)
   const selectedUnit = ref(null)
   const customerType = ref(props.customerType)
 
-  const hasUnits = computed(() => props.product?.active_units?.length > 0)
+  // Lid exchange state
+  const topupPreset = ref(500)
+  const customTopup = ref(null)
 
-  const sortedUnits = computed(() => {
-    return [...(props.product.active_units || [])].sort(
+  // ── Mode ───────────────────────────────────────────────────────────────────
+  const isLidExchange = computed(() => customerType.value === 'lid_exchange')
+
+  // ── Units ──────────────────────────────────────────────────────────────────
+  const hasUnits = computed(
+    () => (props.product?.active_units?.length ?? 0) > 0
+  )
+  const sortedUnits = computed(() =>
+    [...(props.product?.active_units || [])].sort(
       (a, b) => a.qty_per_base - b.qty_per_base
     )
-  })
-  // ── Stock status ──────────────────────────────────────────────────────────
+  )
+
+  // ── Stock ──────────────────────────────────────────────────────────────────
   const stockQty = computed(() =>
     parseFloat(props.product?.stock_quantity ?? 0)
   )
@@ -309,7 +368,6 @@
       stockQty.value > 0 &&
       stockQty.value <= parseFloat(props.product.reorder_level)
   )
-
   const stockColor = computed(() => {
     if (isOutOfStock.value) return 'error'
     if (isLowStock.value) return 'warning'
@@ -333,14 +391,20 @@
     })
   })
 
-  // Max qty available when no units
+  // ── Normal sale helpers ────────────────────────────────────────────────────
   const maxQtyNoUnit = computed(() => Math.floor(stockQty.value))
-
-  // Max qty available for a specific unit
   const maxForUnit = unit =>
     Math.floor(stockQty.value / parseFloat(unit.qty_per_base ?? 1))
 
-  // Can add to cart
+  const unitPriceFor = unit => {
+    if (customerType.value === 'wholesale' && unit.wholesale_price)
+      return parseFloat(unit.wholesale_price)
+    return parseFloat(unit.retail_price)
+  }
+  const unitPrice = computed(() =>
+    parseFloat(props.product?.selling_price ?? props.product?.base_price ?? 0)
+  )
+
   const canAddToCart = computed(() => {
     if (isOutOfStock.value) return false
     if (hasUnits.value) {
@@ -350,12 +414,40 @@
     return qty.value <= maxQtyNoUnit.value && qty.value > 0
   })
 
-  // ── Reset on product change ───────────────────────────────────────────────
+  // ── Lid exchange helpers ───────────────────────────────────────────────────
+  const lidMaxQty = computed(() => {
+    if (selectedUnit.value) return maxForUnit(selectedUnit.value)
+    return Math.floor(stockQty.value)
+  })
+
+  const effectiveTopup = computed(() =>
+    customTopup.value > 0
+      ? Number(customTopup.value)
+      : Number(topupPreset.value ?? 500)
+  )
+  const lidTotalPrice = computed(() => effectiveTopup.value * qty.value)
+
+  const onCustomTopup = val => {
+    if (val > 0) topupPreset.value = null
+    else topupPreset.value = 500
+  }
+
+  const canAddLidExchange = computed(() => {
+    if (isOutOfStock.value) return false
+    if (hasUnits.value && !selectedUnit.value) return false
+    if (qty.value < 1 || qty.value > lidMaxQty.value) return false
+    if (effectiveTopup.value <= 0) return false
+    return true
+  })
+
+  // ── Reset on product change ────────────────────────────────────────────────
   watch(
     () => props.product,
     () => {
       qty.value = 1
       selectedUnit.value = null
+      customTopup.value = null
+      topupPreset.value = 500
       if (hasUnits.value) {
         selectedUnit.value =
           props.product.active_units.find(u => u.is_base_unit) ??
@@ -365,43 +457,75 @@
     { immediate: true }
   )
 
+  // Reset qty when switching mode
+  watch(isLidExchange, () => {
+    qty.value = 1
+  })
+
+  // Sync customerType from prop (POS page level change)
+  watch(
+    () => props.customerType,
+    val => {
+      customerType.value = val
+    }
+  )
+
   const selectUnit = unit => {
     selectedUnit.value = unit
     qty.value = 1
   }
 
-  const unitPriceFor = unit => {
-    if (customerType.value === 'wholesale' && unit.wholesale_price)
-      return parseFloat(unit.wholesale_price)
-    return parseFloat(unit.retail_price)
-  }
-
-  const unitPrice = computed(() =>
-    parseFloat(props.product?.selling_price ?? props.product?.base_price ?? 0)
-  )
-
+  // ── Add to cart ────────────────────────────────────────────────────────────
   const addToCart = () => {
-    if (!props.product || !canAddToCart.value) return
-    emit('add', {
-      product_id: props.product.id,
-      product_unit_id: selectedUnit.value?.id ?? null,
-      name: props.product.name,
-      unit_name:
-        selectedUnit.value?.unit_label ??
-        selectedUnit.value?.unit_name ??
-        props.product.unit ??
-        'pcs',
-      qty_per_base: selectedUnit.value?.qty_per_base ?? 1,
-      price: selectedUnit.value
-        ? unitPriceFor(selectedUnit.value)
-        : unitPrice.value,
-      image_url: props.product.image_url,
-      quantity: qty.value,
-      _unitData: selectedUnit.value ?? null,
-    })
+    if (!props.product) return
+
+    if (isLidExchange.value) {
+      // Lid exchange emit
+      emit('add', {
+        product_id: props.product.id,
+        product_unit_id: selectedUnit.value?.id ?? null,
+        name: props.product.name,
+        unit_name:
+          selectedUnit.value?.unit_label ??
+          selectedUnit.value?.unit_name ??
+          props.product.unit ??
+          'pcs',
+        qty_per_base: selectedUnit.value?.qty_per_base ?? 1,
+        price: effectiveTopup.value,
+        topup_amount: effectiveTopup.value,
+        image_url: props.product.image_url,
+        quantity: qty.value,
+        customer_type: 'lid_exchange',
+        _unitData: selectedUnit.value ?? null,
+        _is_lid_exchange: true
+      })
+    } else {
+      // Normal sale emit
+      emit('add', {
+        product_id: props.product.id,
+        product_unit_id: selectedUnit.value?.id ?? null,
+        name: props.product.name,
+        unit_name:
+          selectedUnit.value?.unit_label ??
+          selectedUnit.value?.unit_name ??
+          props.product.unit ??
+          'pcs',
+        qty_per_base: selectedUnit.value?.qty_per_base ?? 1,
+        price: selectedUnit.value
+          ? unitPriceFor(selectedUnit.value)
+          : unitPrice.value,
+        image_url: props.product.image_url,
+        quantity: qty.value,
+        customer_type: customerType.value,
+        _unitData: selectedUnit.value ?? null,
+        _is_lid_exchange: false
+      })
+    }
+
     model.value = false
   }
 
+  // ── Helpers ────────────────────────────────────────────────────────────────
   const fmtQty = v => {
     const n = parseFloat(v)
     return Number.isInteger(n) ? n : parseFloat(n.toFixed(2))
