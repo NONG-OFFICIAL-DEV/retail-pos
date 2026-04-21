@@ -65,21 +65,6 @@
       <LanguageSwicher />
       <v-divider vertical class="border-opacity-20 mx-2" style="height:24px;align-self:center" />
 
-      <!-- Notifications -->
-      <v-btn icon variant="text" size="small" color="grey-darken-1" rounded="lg" class="mr-1">
-        <v-badge
-          v-if="operator.notificationsCount > 0"
-          :content="operator.notificationsCount"
-          color="error"
-          floating
-        >
-          <v-icon icon="mdi-bell-outline" size="20" />
-        </v-badge>
-        <v-icon v-else icon="mdi-bell-outline" size="20" />
-      </v-btn>
-
-      <v-divider vertical class="border-opacity-20 mx-2" style="height:24px;align-self:center" />
-
       <!-- Fullscreen toggle -->
       <v-btn
         icon
@@ -177,8 +162,7 @@ const props = defineProps({
       branchName: '',
       buName: '',
       avatar: null,
-      initials: 'OP',
-      notificationsCount: 0
+      initials: 'OP'
     })
   }
 })

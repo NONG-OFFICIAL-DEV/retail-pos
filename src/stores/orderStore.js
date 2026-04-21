@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import orderService from '@/api/order'
-import echo from '@/utils/echo'
 
 export const useOrderStore = defineStore('order', {
   state: () => ({
