@@ -76,6 +76,7 @@
             density="compact"
             rounded="lg"
             variant="outlined"
+            @update:modelValue="martStore.setCustomerType($event)"
           >
             <v-btn value="retail" size="small" class="text-none px-4">
               {{ t('unit.retail') }}
@@ -272,8 +273,9 @@
   import { ref, computed, watch } from 'vue'
   import { useI18n } from 'vue-i18n'
   import { formatKHR } from '@nong-official-dev/core'
+  import { useMartStore } from '@/stores/martStore'
   const { t } = useI18n()
-
+  const martStore = useMartStore()
   const props = defineProps({
     modelValue: { type: Boolean, default: false },
     product: { type: Object, default: null },
@@ -395,7 +397,7 @@
         : unitPrice.value,
       image_url: props.product.image_url,
       quantity: qty.value,
-      customer_type: customerType.value
+      _unitData: selectedUnit.value ?? null,
     })
     model.value = false
   }

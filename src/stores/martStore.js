@@ -8,6 +8,7 @@ export const useMartStore = defineStore('mart', {
   state: () => ({
     cartItems: [],
     paymentMethod: 'cash',
+    customerType: 'retail',
     loading: false,
     discount: 0
   }),
@@ -27,7 +28,6 @@ export const useMartStore = defineStore('mart', {
     addToCart(product) {
       const unitId = product.product_unit_id ?? 'base'
       const key = `${product.id}__${unitId}`
-
       const existing = this.cartItems.find(i => i._key === key)
 
       if (existing) {
@@ -40,11 +40,13 @@ export const useMartStore = defineStore('mart', {
           name: product.name,
           unit: product.unit || 'pcs', // display unit
           qty_per_base: product.qty_per_base ?? 1,
-          price: parseFloat(
-            product.price ?? product.selling_price ?? product.base_price ?? 0
-          ),
+          // price: parseFloat(
+          //   product.price ?? product.selling_price ?? product.base_price ?? 0
+          // ),
+          price: parseFloat(product.price ?? 0),
           image_url: product.image_url ?? null,
-          qty: product.qty ?? 1
+          qty: product.qty ?? 1,
+          _unitData: product._unitData ?? null,
         })
       }
     },
@@ -67,11 +69,24 @@ export const useMartStore = defineStore('mart', {
     clearCart() {
       this.cartItems = []
       this.paymentMethod = 'cash'
+      this.customerType = 'retail'
       this.discount = 0
     },
 
     setPaymentMethod(method) {
       this.paymentMethod = method
+    },
+    setCustomerType(type) {
+      this.customerType = type
+      // Recalculate all cart item prices when type changes
+      this.cartItems.forEach(item => {
+        if (item._unitData) {
+          item.price =
+            type === 'wholesale' && item._unitData.wholesale_price
+              ? parseFloat(item._unitData.wholesale_price)
+              : parseFloat(item._unitData.retail_price)
+        }
+      })
     },
     setDiscount(amount) {
       this.discount = parseFloat(amount) || 0
@@ -103,6 +118,7 @@ export const useMartStore = defineStore('mart', {
         const data = await orderStore.createOrder({
           branch_id: auth.branch_id,
           payment_method: this.paymentMethod,
+          customer_type: this.customerType,
           order_type: 'takeaway',
           discount_amount: this.discount,
           cash_tendered: extraPayload.cash_tendered ?? 0,

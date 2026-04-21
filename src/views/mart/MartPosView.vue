@@ -180,7 +180,7 @@
   const selectedCategory = ref('all')
   const pickerDialog = ref(false)
   const pickerProduct = ref(null)
-  const customerType = ref('retail')
+  const customerType = martStore.customerType
 
   const categories = computed(() => categoryStore.categories ?? [])
   const isLoading = ref(false)
