@@ -487,6 +487,8 @@
   const selectUnit = unit => {
     selectedUnit.value = unit
     qty.value = 1
+    customTopup.value = null
+    topupPreset.value = 500
   }
 
   // ── Add to cart ────────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 <template>
-  <!-- Unit selector (if product has units) -->
+  <!-- Unit selector -->
   <div class="d-flex align-center justify-space-between mb-2">
     <span class="text-caption font-weight-bold text-medium-emphasis">
       {{ t('unit.select_unit') }}
@@ -27,13 +27,9 @@
         flat
         border
         rounded="lg"
-        class="pa-3 unit-card"
-        :class="{
-          'selected-unit': selectedUnit?.id === unit.id,
-          'cursor-pointer': Number(unit.qty_per_base) === 1,
-          'disabled-unit': Number(unit.qty_per_base) !== 1
-        }"
-        @click="unit.qty_per_base === 1 ? emit('selectUnit', unit) : null"
+        class="pa-3 cursor-pointer unit-card"
+        :class="{ 'selected-unit': selectedUnit?.id === unit.id }"
+        @click="emit('selectUnit', unit)"
       >
         <div class="d-flex align-center justify-space-between">
           <div>
@@ -41,12 +37,7 @@
               <strong>{{ unit.qty_per_base }}</strong>
               x {{ unit.unit_label || unit.unit_name }}
             </div>
-            <div
-              class="text-caption"
-              :class="
-                maxForUnit(unit) <= 0 ? 'text-error' : 'text-medium-emphasis'
-              "
-            >
+            <div class="text-caption text-medium-emphasis">
               {{ t('common.max') }}: {{ maxForUnit(unit) }}
               {{ unit.unit_label ?? unit.unit_name }}
               {{ t('common.available') }}
@@ -59,15 +50,6 @@
               color="primary"
               size="18"
             />
-            <v-chip
-               v-else-if="Number(unit.qty_per_base) !== 1"
-              size="x-small"
-              color="secondary"
-              variant="tonal"
-              rounded="lg"
-            >
-              {{ t('common.out_of_stock') }}
-            </v-chip>
             <v-chip
               v-else-if="maxForUnit(unit) <= 0"
               size="x-small"
@@ -131,33 +113,57 @@
 
   <v-divider class="my-3" />
 
-  <!-- Top-up per can -->
+  <!-- Top-up per unit -->
   <div class="text-caption font-weight-bold text-medium-emphasis mb-2">
     {{ t('lid_exchange.topup_per_can') }}
+    <span class="text-caption font-weight-regular ml-1 text-medium-emphasis">
+      / {{ selectedUnit?.unit_label ?? selectedUnit?.unit_name ?? 'pcs' }}
+    </span>
   </div>
-  <div class="d-flex align-center gap-3 mb-3">
-    <v-btn-toggle
-      :model-value="topupPreset"
-      mandatory
-      density="compact"
-      rounded="lg"
-      variant="outlined"
-      color="primary"
-      @update:modelValue="emit('update:topupPreset', $event)"
-    >
-      <v-btn :value="500" class="text-none px-5">
-        <span class="font-weight-black">500</span>
-        <span class="text-caption ml-1 opacity-70">រ</span>
-      </v-btn>
-      <v-btn :value="1000" class="text-none px-5">
-        <span class="font-weight-black">1000</span>
-        <span class="text-caption ml-1 opacity-70">រ</span>
-      </v-btn>
-    </v-btn-toggle>
 
+  <!-- qty_per_base === 1 → preset + optional custom -->
+  <template v-if="isSingleUnit">
+    <div class="d-flex align-center gap-3 mb-3">
+      <v-btn-toggle
+        :model-value="topupPreset"
+        mandatory
+        density="compact"
+        rounded="lg"
+        variant="outlined"
+        color="primary"
+        @update:modelValue="onPresetChange"
+      >
+        <v-btn :value="300" class="text-none px-5">
+          <span class="font-weight-black">300</span>
+          <span class="text-caption ml-1 opacity-70">រ</span>
+        </v-btn>
+        <v-btn :value="500" class="text-none px-5">
+          <span class="font-weight-black">500</span>
+          <span class="text-caption ml-1 opacity-70">រ</span>
+        </v-btn>
+      </v-btn-toggle>
+      <v-text-field
+        :model-value="customTopup"
+        :placeholder="t('lid_exchange.custom_topup')"
+        prefix="៛"
+        type="number"
+        min="0"
+        variant="outlined"
+        density="compact"
+        rounded="lg"
+        hide-details
+        clearable
+        class="flex-grow-1 ms-4"
+        @update:modelValue="onCustomTopup"
+      />
+    </div>
+  </template>
+
+  <!-- qty_per_base > 1 → manual entry only (box, case, etc.) -->
+  <template v-else>
     <v-text-field
       :model-value="customTopup"
-      :placeholder="t('lid_exchange.custom_topup')"
+      :placeholder="`${t('lid_exchange.custom_topup')} (${selectedUnit?.unit_label ?? selectedUnit?.unit_name ?? 'pcs'})`"
       prefix="៛"
       type="number"
       min="0"
@@ -166,16 +172,18 @@
       rounded="lg"
       hide-details
       clearable
-      class="flex-grow-1"
+      class="mb-3"
       @update:modelValue="onCustomTopup"
     />
-  </div>
+  </template>
 
   <!-- Summary -->
   <v-card flat rounded="lg" color="primary" class="pa-3">
     <div class="d-flex align-center justify-space-between">
       <div class="text-caption text-white opacity-80">
-        {{ qty }} {{ t('lid_exchange.lids') }} × {{ formatKHR(effectiveTopup) }}
+        {{ qty }}
+        {{ selectedUnit?.unit_label ?? selectedUnit?.unit_name ?? 'pcs' }}
+        × {{ formatKHR(effectiveTopup) }}
       </div>
       <div class="text-body-1 font-weight-black text-white">
         {{ formatKHR(lidTotalPrice) }}
@@ -200,6 +208,7 @@
     hasUnits: { type: Boolean, default: false },
     stockQty: { type: Number, default: 0 }
   })
+
   const showUnits = ref(false)
 
   const emit = defineEmits([
@@ -209,31 +218,46 @@
     'selectUnit'
   ])
 
+  // true = single can (500/1000 presets), false = multi-unit (manual only)
+  const isSingleUnit = computed(
+    () => !props.selectedUnit || Number(props.selectedUnit.qty_per_base) === 1
+  )
+
   const maxForUnit = unit =>
     Math.floor(props.stockQty / parseFloat(unit.qty_per_base ?? 1))
 
-  const lidMaxQty = computed(() => Math.floor(props.stockQty)) // always base qty since qty_per_base = 1
+  const lidMaxQty = computed(() => {
+    if (props.selectedUnit) return maxForUnit(props.selectedUnit)
+    return Math.floor(props.stockQty)
+  })
 
-  const effectiveTopup = computed(() =>
-    props.customTopup > 0
-      ? Number(props.customTopup)
-      : Number(props.topupPreset ?? 500)
-  )
+  // for single unit: use customTopup if set, else preset
+  // for multi unit: use customTopup only
+  const effectiveTopup = computed(() => {
+    if (props.customTopup > 0) return Number(props.customTopup)
+    if (isSingleUnit.value) return Number(props.topupPreset ?? 500)
+    return 0
+  })
+
   const lidTotalPrice = computed(() => effectiveTopup.value * props.qty)
+
+  const onPresetChange = val => {
+    emit('update:topupPreset', val)
+    emit('update:customTopup', null) // clear custom when preset selected
+  }
 
   const onCustomTopup = val => {
     const n = Number(val)
     emit('update:customTopup', n > 0 ? n : null)
-    if (n > 0) emit('update:topupPreset', null)
-    else emit('update:topupPreset', 500)
+    if (isSingleUnit.value) {
+      // clear preset highlight when typing custom
+      if (n > 0) emit('update:topupPreset', null)
+      else emit('update:topupPreset', 500)
+    }
   }
 </script>
 
 <style scoped>
-  .disabled-unit {
-    opacity: 0.45;
-    cursor: not-allowed !important;
-  }
   .unit-card {
     transition: all 0.15s;
     cursor: pointer;
