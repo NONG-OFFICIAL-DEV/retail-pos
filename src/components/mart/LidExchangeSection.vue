@@ -27,9 +27,13 @@
         flat
         border
         rounded="lg"
-        class="pa-3 cursor-pointer unit-card"
-        :class="{ 'selected-unit': selectedUnit?.id === unit.id }"
-        @click="emit('selectUnit', unit)"
+        class="pa-3 unit-card"
+        :class="{
+          'selected-unit': selectedUnit?.id === unit.id,
+          'cursor-pointer': Number(unit.qty_per_base) === 1,
+          'disabled-unit': Number(unit.qty_per_base) !== 1
+        }"
+        @click="unit.qty_per_base === 1 ? emit('selectUnit', unit) : null"
       >
         <div class="d-flex align-center justify-space-between">
           <div>
@@ -49,13 +53,21 @@
             </div>
           </div>
           <div class="d-flex align-center gap-2">
-            <!-- Selected check -->
             <v-icon
               v-if="selectedUnit?.id === unit.id"
               icon="mdi-check-circle"
               color="primary"
               size="18"
             />
+            <v-chip
+               v-else-if="Number(unit.qty_per_base) !== 1"
+              size="x-small"
+              color="secondary"
+              variant="tonal"
+              rounded="lg"
+            >
+              {{ t('common.out_of_stock') }}
+            </v-chip>
             <v-chip
               v-else-if="maxForUnit(unit) <= 0"
               size="x-small"
@@ -200,10 +212,7 @@
   const maxForUnit = unit =>
     Math.floor(props.stockQty / parseFloat(unit.qty_per_base ?? 1))
 
-  const lidMaxQty = computed(() => {
-    if (props.selectedUnit) return maxForUnit(props.selectedUnit)
-    return Math.floor(props.stockQty)
-  })
+  const lidMaxQty = computed(() => Math.floor(props.stockQty)) // always base qty since qty_per_base = 1
 
   const effectiveTopup = computed(() =>
     props.customTopup > 0
@@ -221,6 +230,10 @@
 </script>
 
 <style scoped>
+  .disabled-unit {
+    opacity: 0.45;
+    cursor: not-allowed !important;
+  }
   .unit-card {
     transition: all 0.15s;
     cursor: pointer;

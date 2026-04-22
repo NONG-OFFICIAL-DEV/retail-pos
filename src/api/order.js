@@ -4,8 +4,13 @@ export default {
   getAllOrder() {
     return http.get('/v1/orders')
   },
+  // createOrder(payload,loading) {
+  //   return http.post('/v1/mart/pos/orders', payload, {
+  //     meta: { loader:loading }
+  //   })
+  // },
   createOrder(payload,loading) {
-    return http.post('/v1/mart/pos/orders', payload, {
+    return http.post('/v1/mart/pos/customer-orders', payload, {
       meta: { loader:loading }
     })
   },

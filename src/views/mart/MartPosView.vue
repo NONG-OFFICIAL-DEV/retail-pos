@@ -151,7 +151,7 @@
       v-model="pickerDialog"
       :product="pickerProduct"
       :customer-type="customerType"
-      @add="handleAddToCart"
+      @addToCart="handleAddToCart"
     />
   </div>
 </template>
@@ -236,7 +236,9 @@
       price: payload.price,
       qty_per_base: payload.qty_per_base,
       image_url: payload.image_url,
-      qty: payload.quantity
+      qty: payload.quantity,
+      customer_type: payload.customer_type,
+      topup_amount: payload.topup_amount ?? null
     })
     notif(t('notification.addedToCart'), {
       type: 'success',

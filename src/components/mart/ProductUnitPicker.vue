@@ -317,18 +317,16 @@
   import { ref, computed, watch } from 'vue'
   import { useI18n } from 'vue-i18n'
   import { formatKHR } from '@nong-official-dev/core'
-  import { useMartStore } from '@/stores/martStore'
   import LidExchangeSection from './LidExchangeSection.vue'
 
   const { t } = useI18n()
-  const martStore = useMartStore()
 
   const props = defineProps({
     modelValue: { type: Boolean, default: false },
     product: { type: Object, default: null },
     customerType: { type: String, default: 'retail' }
   })
-  const emit = defineEmits(['update:modelValue', 'add'])
+  const emit = defineEmits(['update:modelValue', 'addToCart'])
 
   const model = computed({
     get: () => props.modelValue,
@@ -425,12 +423,6 @@
       ? Number(customTopup.value)
       : Number(topupPreset.value ?? 500)
   )
-  const lidTotalPrice = computed(() => effectiveTopup.value * qty.value)
-
-  const onCustomTopup = val => {
-    if (val > 0) topupPreset.value = null
-    else topupPreset.value = 500
-  }
 
   const canAddLidExchange = computed(() => {
     if (isOutOfStock.value) return false
@@ -448,18 +440,40 @@
       selectedUnit.value = null
       customTopup.value = null
       topupPreset.value = 500
+
       if (hasUnits.value) {
-        selectedUnit.value =
-          props.product.active_units.find(u => u.is_base_unit) ??
-          props.product.active_units[0]
+        if (isLidExchange.value) {
+          // lid exchange → always pick qty_per_base === 1
+          selectedUnit.value =
+            props.product.active_units.find(
+              u => Number(u.qty_per_base) === 1
+            ) ?? null
+        } else {
+          // normal sale → pick base unit or first
+          selectedUnit.value =
+            props.product.active_units.find(u => u.is_base_unit) ??
+            props.product.active_units[0]
+        }
       }
     },
     { immediate: true }
   )
 
-  // Reset qty when switching mode
-  watch(isLidExchange, () => {
+  watch(isLidExchange, val => {
     qty.value = 1
+    if (!hasUnits.value) return
+
+    if (val) {
+      // switching TO lid exchange
+      selectedUnit.value =
+        props.product.active_units.find(u => Number(u.qty_per_base) === 1) ??
+        null
+    } else {
+      // switching BACK to normal
+      selectedUnit.value =
+        props.product.active_units.find(u => u.is_base_unit) ??
+        props.product.active_units[0]
+    }
   })
 
   // Sync customerType from prop (POS page level change)
@@ -481,7 +495,7 @@
 
     if (isLidExchange.value) {
       // Lid exchange emit
-      emit('add', {
+      emit('addToCart', {
         product_id: props.product.id,
         product_unit_id: selectedUnit.value?.id ?? null,
         name: props.product.name,
@@ -501,7 +515,7 @@
       })
     } else {
       // Normal sale emit
-      emit('add', {
+      emit('addToCart', {
         product_id: props.product.id,
         product_unit_id: selectedUnit.value?.id ?? null,
         name: props.product.name,

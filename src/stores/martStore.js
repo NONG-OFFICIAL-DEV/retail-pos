@@ -27,7 +27,8 @@ export const useMartStore = defineStore('mart', {
     //                              →  2 boxes = merged into qty: 2
     addToCart(product) {
       const unitId = product.product_unit_id ?? 'base'
-      const key = `${product.id}__${unitId}`
+      const price = product.price
+      const key = `${product.id}__${unitId}_${price}`
       const existing = this.cartItems.find(i => i._key === key)
 
       if (existing) {
@@ -47,6 +48,8 @@ export const useMartStore = defineStore('mart', {
           image_url: product.image_url ?? null,
           qty: product.qty ?? 1,
           _unitData: product._unitData ?? null,
+          customer_type: product.customer_type,
+          topup_amount:    product.topup_amount ?? null,
         })
       }
     },
@@ -112,7 +115,9 @@ export const useMartStore = defineStore('mart', {
           product_id: i.id,
           unit: i.unit,
           product_unit_id: i.product_unit_id ?? null,
-          quantity: i.qty
+          quantity: i.qty,
+          customer_type: i.customer_type,
+          topup_amount: i.topup_amount,
         }))
 
         const data = await orderStore.createOrder({
