@@ -41,9 +41,6 @@ export const useMartStore = defineStore('mart', {
           name: product.name,
           unit: product.unit || 'pcs', // display unit
           qty_per_base: product.qty_per_base ?? 1,
-          // price: parseFloat(
-          //   product.price ?? product.selling_price ?? product.base_price ?? 0
-          // ),
           price: parseFloat(product.price ?? 0),
           image_url: product.image_url ?? null,
           qty: product.qty ?? 1,
