@@ -54,7 +54,10 @@
     "wating": "Your order has been sent to the kitchen.",
     "ready": "We'll notify you when it's ready.",
     "clear": "Cart cleared",
-    "login_success": "login successfully"
+    "login_success": "login successfully",
+    "loginSucess": "Logged in successfully",
+    "logoutSucess": "Logged out successfully",
+    "authFailed": "Authentication failed. Please try again."
   },
   "unit": {
     "customer_type": "Customer Type",
@@ -109,5 +112,25 @@
     "transfer": "Transfer",
     "cash_tendered": "Cash Tendered",
     "change": "Change"
+  },
+  "login": {
+    "welcome": "Welcome back",
+    "subtitle": "Sign in to your station",
+    "pin_code": "PIN Code",
+    "password": "Password",
+    "email_tab": "Email",
+    "email_label": "Email address",
+    "password_label": "Password",
+    "verify_pin": "Verify PIN",
+    "sign_in": "Sign In",
+    "pin_error": "Incorrect PIN. Please try again."
+  },
+  "validation": {
+    "required": "This field is required",
+    "email": "Enter a valid email address",
+    "email_required": "Email is required",
+    "email_invalid": "Enter a valid email address",
+    "password_required": "Password is required",
+    "password_min": "At least 6 characters"
   }
 }
