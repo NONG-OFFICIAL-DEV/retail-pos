@@ -5,7 +5,7 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
     me: {},
-    token: localStorage.getItem('token') || null,
+    token: localStorage.getItem('mart-token') || null,
     isSuperAdmin: false,
     isOwner: false,
     isStaff: false,
@@ -32,7 +32,7 @@ export const useAuthStore = defineStore('auth', {
     // ── Internal helper — apply any login response (email OR pin) ─────────────
     _applyLoginResponse(data) {
       this.token = data.token
-      localStorage.setItem('token', data.token)
+      localStorage.setItem('mart-token', data.token)
 
       this.user         = data.user
       this.permissions  = data.permissions ?? []
@@ -92,7 +92,7 @@ export const useAuthStore = defineStore('auth', {
     async logout() {
       await authService.userLogout().catch(() => {})
       this.$reset()
-      localStorage.removeItem('token')
+      localStorage.removeItem('mart-token')
     },
   },
 })

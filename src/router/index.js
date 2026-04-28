@@ -28,7 +28,7 @@ const router = createRouter({
 
 // ── Global guard — runs once before any page loads ─────────────────────────
 router.beforeEach(async (to, from, next) => {
-  const token = localStorage.getItem('token')
+  const token = localStorage.getItem('mart-token')
 
   // No token → go to login
   if (!token) {
@@ -48,7 +48,7 @@ router.beforeEach(async (to, from, next) => {
       try {
         await authStore.fetchMe()
       } catch {
-        localStorage.removeItem('token')
+        localStorage.removeItem('mart-token')
         return next({ name: 'Login' })
       }
     }
