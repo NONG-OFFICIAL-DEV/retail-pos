@@ -15,7 +15,7 @@ const loadingStore = useLoadingStore()
 api.interceptors.request.use(async config => {
   // const loaderType = config.meta?.loader || 'overlay'
   try {
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem('mart-token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }

@@ -13,7 +13,9 @@
     "delete": "Delete",
     "print_receipt": "Print Receipt",
     "skip": "Skip",
-    "add_exchange": "Add Exchange"
+    "add_exchange": "Add Exchange",
+    "apply": "Apply Discount",
+    "validate": "Validate Code"
   },
   "common": {
     "search": "Search dishes, drinks...",
@@ -113,6 +115,7 @@
     "cash_tendered": "Cash Tendered",
     "change": "Change"
   },
+
   "login": {
     "welcome": "Welcome back",
     "subtitle": "Sign in to your station",
@@ -132,5 +135,39 @@
     "email_invalid": "Enter a valid email address",
     "password_required": "Password is required",
     "password_min": "At least 6 characters"
+  },
+  "discount": {
+    "title": "Apply Discount",
+    "subtitle": "Choose a discount type to apply to this order",
+    "tabs": {
+      "percentage": "Percentage",
+      "fixed": "Fixed",
+      "coupon": "Coupon"
+    },
+    "percentage": {
+      "hint": "Quick select or enter a custom percentage",
+      "label": "Custom Percentage (%)",
+      "hint_discount": "Discount"
+    },
+    "fixed": {
+      "hint": "Quick select or enter a custom fixed amount",
+      "label": "Custom Amount (KHR)"
+    },
+    "coupon": {
+      "hint": "Enter a coupon or promo code",
+      "label": "Coupon Code",
+      "validate_btn": "Validate Code",
+      "invalid": "Invalid or expired coupon code.",
+      "saves": "Saves"
+    },
+    "preview": {
+      "title": "Discount Preview",
+      "percentage_label": "percentage discount",
+      "fixed_label": "Fixed amount discount",
+      "coupon_label": "Coupon"
+    },
+    "chip": {
+      "applied": "Discount Applied"
+    }
   }
 }
