@@ -80,7 +80,7 @@
             <v-btn value="wholesale" size="small" class="text-none px-3">
               {{ t('unit.wholsale') }}
             </v-btn>
-            <v-btn value="lid_exchange" size="small" class="text-none px-3">
+            <v-btn v-if="product.category.is_lid_exchange" value="lid_exchange" size="small" class="text-none px-3">
               {{ t('lid_exchange.title') }}
             </v-btn>
           </v-btn-toggle>
