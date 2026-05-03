@@ -249,8 +249,8 @@
   onMounted(async () => {
     isLoading.value = true
     await Promise.all([
-      productStore.fetchProducts({ branch_id: authStore.branch_id }),
-      categoryStore.fetchCategories({ branch_id: authStore.branch_id })
+      productStore.fetchProducts({ branch_id: authStore.activeBranch?.id }),
+      categoryStore.fetchCategories({ branch_id: authStore.activeBranch?.id })
     ])
     isLoading.value = false
   })

@@ -1,7 +1,14 @@
 <template>
   <v-app class="bg-grey-lighten-5">
     <!-- ── App Bar ──────────────────────────────────────────────────────────── -->
-    <MartAppBar v-model:search="search" :operator="operator" @logout="logout" />
+    <MartAppBar
+      v-model:search="search"
+      :operator="operator"
+      :branches="operator.branches"
+      :current-branch-id="operator.currentBranchId"
+      @logout="logout"
+      @branch-changed="handleBranchChange"
+    />
 
     <!-- ── Cart Drawer ──────────────────────────────────────────────────────── -->
     <MartCartDrawer
@@ -147,6 +154,15 @@
     router.push({ name: 'Login' })
   }
 
+  const handleBranchChange = async branch => {
+    authStore.setActiveBranch(branch)
+
+    // await Promise.all([
+    //   productStore.fetchProducts({ branch_id: branch.id }),
+    //   categoryStore.fetchCategories({ branch_id: branch.id })
+    // ])
+  }
+
   const processCheckout = async (extraPayload = {}) => {
     try {
       const data = await martStore.checkout(extraPayload)
@@ -173,7 +189,7 @@
 
   // ── Checkout — check printer first on Android ─────────────────────────────
   const completeOrder = async () => {
-    if (!checkPrinterBeforeCheckout()) return  // ← stop if not connected
+    if (!checkPrinterBeforeCheckout()) return // ← stop if not connected
 
     if (cart.value?.paymentMethod === 'cash') {
       cashDialog.value = true
@@ -183,7 +199,7 @@
   }
 
   const confirmCashPayment = async ({ cash_received, change }) => {
-    if (!checkPrinterBeforeCheckout()) return  // ← stop if not connected
+    if (!checkPrinterBeforeCheckout()) return // ← stop if not connected
 
     cashDialog.value = false
     await processCheckout({

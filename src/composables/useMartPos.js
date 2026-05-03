@@ -9,37 +9,57 @@ export function useMartPos() {
   const mart = useMartStore()
   const { notif } = useAppUtils()
 
-  const operator = computed(() => ({
-    displayName: [auth.me?.first_name, auth.me?.last_name]
-      .filter(Boolean)
-      .join(' '),
-    roleName: auth.role_name ?? '',
-    branchName: auth.branch_name ?? '',
-    buName: auth.bu_name ?? '',
-    branchId: auth.branch_id ?? null,
-    avatar: auth.me?.avatar ?? null,
-    initials: getInitials(auth.me?.first_name, auth.me?.last_name),
-    notificationsCount: auth.unread_notifications_count ?? 0
-  }))
+  // ── Operator ────────────────────────────────────────────────────────────
+  const operator = computed(() => {
+    const branches = auth.branches ?? []
+    const activeBranchId = auth.active_branch_id
+      ?? branches[0]?.id
+      ?? null
 
+    return {
+      displayName  : buildDisplayName(auth.me?.first_name, auth.me?.last_name),
+      initials     : getInitials(auth.me?.first_name, auth.me?.last_name),
+      avatar       : auth.me?.avatar_url ?? null,
+      roleName     : auth.role_name  ?? '',
+      branchName   : auth.branch_name ?? '',
+      buName       : auth.bu_name    ?? '',
+      branchId     : auth.branch_id  ?? null,
+      branches,
+      currentBranchId        : activeBranchId,
+      notificationsCount     : auth.unread_notifications_count ?? 0,
+      isOwner                : auth.is_owner ?? false,
+    }
+  })
+
+  // ── Cart ────────────────────────────────────────────────────────────────
   const cart = computed(() => ({
-    items: mart.cartItems,
-    subtotal: mart.subtotal,
-    total: mart.total,
+    items        : mart.cartItems,
+    subtotal     : mart.subtotal,
+    total        : mart.total,
     paymentMethod: mart.paymentMethod,
-    isEmpty: mart.isEmpty,
-    itemCount: mart.itemCount,
-    loading: mart.loading
+    isEmpty      : mart.isEmpty,
+    itemCount    : mart.itemCount,
+    loading      : mart.loading,
   }))
 
-  // ── Actions — pass item.id not the whole object ────────────────────────
-  const addToCart = product => mart.addToCart(product)
-  const updateQty = (key, qty) => mart.updateQty(key, qty) // ← item.id
-  const removeItem = key => mart.removeFromCart(key) // ← item.id
-  const clearCart = () => mart.clearCart()
-  const setPayment = method => mart.setPaymentMethod(method)
+  // ── Cart actions ────────────────────────────────────────────────────────
+  const addToCart  = (product)    => mart.addToCart(product)
+  const updateQty  = (key, qty)   => mart.updateQty(key, qty)
+  const removeItem = (key)        => mart.removeFromCart(key)
+  const clearCart  = ()           => mart.clearCart()
+  const setPayment = (method)     => mart.setPaymentMethod(method)
+
   const checkout = async () => {
+    if (cart.value.isEmpty) {
+      notif('warning', 'Cart is empty')
+      return
+    }
     await mart.checkout(notif)
+  }
+
+  // ── Branch actions ───────────────────────────────────────────────────────
+  const switchBranch = (branch) => {
+    auth.setActiveBranch(branch)
   }
 
   return {
@@ -50,12 +70,18 @@ export function useMartPos() {
     removeItem,
     clearCart,
     setPayment,
-    checkout
+    checkout,
+    switchBranch,
   }
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+function buildDisplayName(first, last) {
+  return [first, last].filter(Boolean).join(' ') || 'Operator'
 }
 
 function getInitials(first, last) {
   if (first && last) return (first[0] + last[0]).toUpperCase()
-  if (first) return first.slice(0, 2).toUpperCase()
+  if (first)         return first.slice(0, 2).toUpperCase()
   return 'OP'
 }

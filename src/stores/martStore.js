@@ -102,7 +102,7 @@ export const useMartStore = defineStore('mart', {
         throw new Error('Cart is empty')
       }
 
-      if (!auth.branch_id) {
+      if (!auth.activeBranch?.id) {
         throw new Error('No branch assigned')
       }
 
@@ -118,7 +118,7 @@ export const useMartStore = defineStore('mart', {
         }))
 
         const data = await orderStore.createOrder({
-          branch_id: auth.branch_id,
+          branch_id: auth.activeBranch?.id,
           payment_method: this.paymentMethod,
           customer_type: this.customerType,
           order_type: 'takeaway',
@@ -128,7 +128,7 @@ export const useMartStore = defineStore('mart', {
           items
         })
         this.clearCart()
-        productStore.fetchProducts({ branch_id: auth.branch_id })
+        productStore.fetchProducts({ branch_id: auth.activeBranch?.id })
         return data
       } finally {
         this.loading = false
