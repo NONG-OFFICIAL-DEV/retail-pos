@@ -107,7 +107,10 @@
     "card": "កាត",
     "transfer": "ផ្ទេរប្រាក់",
     "cash_tendered": "ប្រាក់ដែលបានទទួល",
-    "change": "ប្រាក់អាប់"
+    "change": "ប្រាក់អាប់",
+    "insufficient": "ប្រាក់មិនគ្រប់គ្រាន់សម្រាប់ការកម្មង់",
+    "cash_received_khr": "ប្រាក់ដែលបានទទួល (KHR)",
+    "cash_received_usd": "ប្រាក់ដែលបានទទួល (USD)"
   },
 
   "login": {

@@ -113,7 +113,10 @@
     "card": "Card",
     "transfer": "Transfer",
     "cash_tendered": "Cash Tendered",
-    "change": "Change"
+    "change": "Change",
+    "insufficient": "Insufficient order amount",
+    "cash_received_khr": "Cash received (KHR)",
+    "cash_received_usd": "Cash received (USD)"
   },
 
   "login": {
