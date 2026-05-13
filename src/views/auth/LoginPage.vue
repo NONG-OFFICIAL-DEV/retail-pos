@@ -10,7 +10,7 @@
           <div class="brand-icon">
             <v-icon size="22" color="white">mdi-storefront-outline</v-icon>
           </div>
-          <span class="brand-name">Nexus POS</span>
+          <span class="brand-name">Nexstack POS</span>
         </div>
 
         <!-- Center illustration -->
