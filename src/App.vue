@@ -53,7 +53,7 @@
   }
 
   body {
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Google Sans', sans-serif;
   }
   ::-webkit-scrollbar {
     display: none;
