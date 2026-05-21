@@ -13,7 +13,7 @@
     >
       {{
         selectedUnit
-          ? selectedUnit.unit_label ?? selectedUnit.unit_name
+          ? selectedUnit.unit_name
           : t('unit.select_unit')
       }}
     </v-btn>
@@ -35,11 +35,11 @@
           <div>
             <div class="text-body-2 font-weight-bold">
               <strong>{{ unit.qty_per_base }}</strong>
-              x {{ unit.unit_label || unit.unit_name }}
+              x {{ unit.unit_name }}
             </div>
             <div class="text-caption text-medium-emphasis">
               {{ t('common.max') }}: {{ maxForUnit(unit) }}
-              {{ unit.unit_label ?? unit.unit_name }}
+              {{ unit.unit_name }}
               {{ t('common.available') }}
             </div>
           </div>
@@ -103,7 +103,7 @@
     />
     <div class="text-caption text-medium-emphasis ml-auto">
       {{ t('common.max') }}: {{ lidMaxQty }}
-      {{ selectedUnit?.unit_label ?? selectedUnit?.unit_name ?? 'pcs' }}
+      {{ selectedUnit?.unit_name ?? 'pcs' }}
     </div>
   </div>
   <div v-if="qty > lidMaxQty" class="text-caption text-error mt-1 mb-2">
@@ -117,7 +117,7 @@
   <div class="text-caption font-weight-bold text-medium-emphasis mb-2">
     {{ t('lid_exchange.topup_per_can') }}
     <span class="text-caption font-weight-regular ml-1 text-medium-emphasis">
-      / {{ selectedUnit?.unit_label ?? selectedUnit?.unit_name ?? 'pcs' }}
+      / {{ selectedUnit?.unit_name ?? 'pcs' }}
     </span>
   </div>
 
@@ -163,7 +163,7 @@
   <template v-else>
     <v-text-field
       :model-value="customTopup"
-      :placeholder="`${t('lid_exchange.custom_topup')} (${selectedUnit?.unit_label ?? selectedUnit?.unit_name ?? 'pcs'})`"
+      :placeholder="`${t('lid_exchange.custom_topup')} (${selectedUnit?.unit_name ?? 'pcs'})`"
       prefix="៛"
       type="number"
       min="0"
@@ -182,7 +182,7 @@
     <div class="d-flex align-center justify-space-between">
       <div class="text-caption text-white opacity-80">
         {{ qty }}
-        {{ selectedUnit?.unit_label ?? selectedUnit?.unit_name ?? 'pcs' }}
+        {{ selectedUnit?.unit_name ?? 'pcs' }}
         × {{ formatKHR(effectiveTopup) }}
       </div>
       <div class="text-body-1 font-weight-black text-white">

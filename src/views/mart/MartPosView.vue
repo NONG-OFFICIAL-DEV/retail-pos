@@ -130,7 +130,7 @@
                 rounded="lg"
                 :color="u.is_base_unit ? 'primary' : 'default'"
               >
-                {{ u.unit_label ?? u.unit_name }}
+                {{ u.unit_name }}
               </v-chip>
               <v-chip
                 v-if="(product.active_units?.length ?? 0) > 2"

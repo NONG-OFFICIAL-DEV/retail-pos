@@ -159,7 +159,7 @@
                   <div>
                     <div class="text-body-2 font-weight-bold">
                       <strong>{{ unit.qty_per_base }}</strong>
-                      x {{ unit.unit_label || unit.unit_name }}
+                      x {{ unit.unit_name }}
                     </div>
                     <div
                       class="text-caption"
@@ -170,7 +170,7 @@
                       "
                     >
                       {{ t('common.max') }}: {{ maxForUnit(unit) }}
-                      {{ unit.unit_label ?? unit.unit_name }}
+                      {{ unit.unit_name }}
                       {{ t('common.available') }}
                     </div>
                   </div>
@@ -250,7 +250,7 @@
                   class="mr-1"
                 />
                 {{ t('common.only') }} {{ maxForUnit(selectedUnit) }}
-                {{ selectedUnit.unit_label ?? selectedUnit.unit_name }}
+                {{ selectedUnit.unit_name }}
                 {{ t('common.available') }}
               </div>
             </div>
@@ -502,7 +502,6 @@
         product_unit_id: selectedUnit.value?.id ?? null,
         name: props.product.name,
         unit_name:
-          selectedUnit.value?.unit_label ??
           selectedUnit.value?.unit_name ??
           props.product.unit ??
           'pcs',
@@ -522,7 +521,6 @@
         product_unit_id: selectedUnit.value?.id ?? null,
         name: props.product.name,
         unit_name:
-          selectedUnit.value?.unit_label ??
           selectedUnit.value?.unit_name ??
           props.product.unit ??
           'pcs',
