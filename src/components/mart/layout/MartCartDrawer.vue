@@ -65,10 +65,23 @@
                   density="compact"
                   small
                   :min="0"
+                  :max="item.stock_quantity"
                   @update:model-value="
                     val => emit('update-qty', item._key, val)
                   "
                 />
+              </div>
+              <div
+                v-if="!item._is_lid_exchange && item.qty >= item.stock_quantity"
+                class="text-caption text-warning d-flex align-center gap-1 mt-1"
+              >
+                <v-icon icon="mdi-alert-outline" size="11" />
+                {{
+                  t('common.max_stock_reached', {
+                    stock: item.stock_quantity,
+                    unit: item.unit
+                  })
+                }}
               </div>
             </div>
           </div>

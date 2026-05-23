@@ -230,6 +230,7 @@
   const handleAddToCart = payload => {
     martStore.addToCart({
       id: payload.product_id,
+      stock_quantity: payload.stock_quantity,
       product_unit_id: payload.product_unit_id,
       name: payload.name,
       unit: payload.unit_name,

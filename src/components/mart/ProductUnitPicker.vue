@@ -499,6 +499,7 @@
       // Lid exchange emit
       emit('addToCart', {
         product_id: props.product.id,
+        stock_quantity: props.product.stock_quantity,
         product_unit_id: selectedUnit.value?.id ?? null,
         name: props.product.name,
         unit_name:
@@ -518,6 +519,7 @@
       // Normal sale emit
       emit('addToCart', {
         product_id: props.product.id,
+        stock_quantity: props.product.stock_quantity,
         product_unit_id: selectedUnit.value?.id ?? null,
         name: props.product.name,
         unit_name:

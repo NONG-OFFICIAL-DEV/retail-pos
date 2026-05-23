@@ -35,7 +35,8 @@
     "out_of_stock": "អស់ស្តុក",
     "low_stock": "ស្តុកតិច · {qty} {unit}",
     "in_stock": "នៅស្តុក · {qty} {unit}",
-    "exceeds_stock": "ចំនួនលើសពីស្តុកដែលមាន"
+    "exceeds_stock": "ចំនួនលើសពីស្តុកដែលមាន",
+    "max_stock_reached": "ស្តុកមានចំនួន {stock} {unit} ប៉ុណ្ណោះ"
   },
   "lang": {
     "km": "ភាសាខ្មែរ",
