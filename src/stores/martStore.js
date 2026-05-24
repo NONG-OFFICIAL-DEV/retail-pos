@@ -37,6 +37,7 @@ export const useMartStore = defineStore('mart', {
         this.cartItems.push({
           _key: key, // merge key
           id: product.id, // product_id
+          product_id: product.product_id ?? product.id,
           stock_quantity: product.stock_quantity, // product_id
           product_unit_id: product.product_unit_id ?? null,
           name: product.name,

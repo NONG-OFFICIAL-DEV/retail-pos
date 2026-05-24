@@ -151,6 +151,7 @@
       v-model="pickerDialog"
       :product="pickerProduct"
       :customer-type="customerType"
+      :cart-items="martStore.cartItems"
       @addToCart="handleAddToCart"
     />
   </div>
@@ -220,7 +221,35 @@
 
   const openPicker = product => {
     if (!product.active_units?.length) {
-      martStore.addToCart({ ...product, quantity: 1 })
+      const alreadyInCart = martStore.cartItems
+        .filter(i => i.product_id === props.product.id && !i._is_lid_exchange)
+        .reduce((sum, i) => sum + i.qty * (i.qty_per_base ?? 1), 0)
+
+      const available = parseFloat(product.stock_quantity ?? 0) - alreadyInCart
+      if (available <= 0) {
+        notif(t('common.out_of_stock'), { type: 'error', color: 'error' })
+        return
+      }
+
+      martStore.addToCart({
+        id: product.id,
+        product_id: product.id,
+        stock_quantity: product.stock_quantity,
+        name: product.name,
+        unit: product.unit ?? 'pcs',
+        price: parseFloat(product.selling_price ?? product.base_price ?? 0),
+        qty_per_base: 1,
+        image_url: product.image_url,
+        qty: 1,
+        quantity: 1,
+        customer_type: martStore.customerType,
+        _unitData: null,
+        _is_lid_exchange: false
+      })
+      notif(t('notification.addedToCart'), {
+        type: 'success',
+        color: 'primary'
+      })
       return
     }
     pickerProduct.value = product
@@ -230,6 +259,7 @@
   const handleAddToCart = payload => {
     martStore.addToCart({
       id: payload.product_id,
+      product_id: payload.product_id,
       stock_quantity: payload.stock_quantity,
       product_unit_id: payload.product_unit_id,
       name: payload.name,
@@ -238,13 +268,13 @@
       qty_per_base: payload.qty_per_base,
       image_url: payload.image_url,
       qty: payload.quantity,
+      quantity: payload.quantity,
       customer_type: payload.customer_type,
-      topup_amount: payload.topup_amount ?? null
+      topup_amount: payload.topup_amount ?? null,
+      _unitData: payload._unitData ?? null,
+      _is_lid_exchange: payload._is_lid_exchange ?? false
     })
-    notif(t('notification.addedToCart'), {
-      type: 'success',
-      color: 'primary'
-    })
+    notif(t('notification.addedToCart'), { type: 'success', color: 'primary' })
   }
 
   onMounted(async () => {

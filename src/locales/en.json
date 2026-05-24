@@ -39,7 +39,8 @@
     "low_stock": "Low stock · {qty} {unit} left",
     "in_stock": "In stock · {qty} {unit}",
     "exceeds_stock": "The quantity exceeds available stock",
-    "max_stock_reached": "Only {stock} {unit} in stock"
+    "max_stock_reached": "Only {stock} {unit} in stock",
+    "cannot_add":"Cannot add"
   },
   "lang": {
     "km": "Khmer",

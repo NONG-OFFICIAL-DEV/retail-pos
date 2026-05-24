@@ -80,7 +80,12 @@
             <v-btn value="wholesale" size="small" class="text-none px-3">
               {{ t('unit.wholsale') }}
             </v-btn>
-            <v-btn v-if="product.category.is_lid_exchange" value="lid_exchange" size="small" class="text-none px-3">
+            <v-btn
+              v-if="product.category.is_lid_exchange"
+              value="lid_exchange"
+              size="small"
+              class="text-none px-3"
+            >
               {{ t('lid_exchange.title') }}
             </v-btn>
           </v-btn-toggle>
@@ -324,7 +329,8 @@
   const props = defineProps({
     modelValue: { type: Boolean, default: false },
     product: { type: Object, default: null },
-    customerType: { type: String, default: 'retail' }
+    customerType: { type: String, default: 'retail' },
+    cartItems: { type: Array, default: () => [] }
   })
   const emit = defineEmits(['update:modelValue', 'addToCart'])
 
@@ -356,10 +362,33 @@
   )
 
   // ── Stock ──────────────────────────────────────────────────────────────────
+  const alreadyInCart = computed(() => {
+    if (!props.product) return 0
+    return props.cartItems
+      .filter(i => i.product_id === props.product.id && !i._is_lid_exchange)
+      .reduce((sum, i) => sum + i.qty * (i.qty_per_base ?? 1), 0)
+  })
+
+  const availableStock = computed(() =>
+    Math.max(0, stockQty.value - alreadyInCart.value)
+  )
+  const isOutOfStock = computed(() => availableStock.value <= 0)
+
+  const maxQtyNoUnit = computed(() => Math.floor(availableStock.value))
+
+  const maxForUnit = unit =>
+    Math.floor(availableStock.value / parseFloat(unit.qty_per_base ?? 1))
+
+  const lidMaxQty = computed(() =>
+    selectedUnit.value
+      ? maxForUnit(selectedUnit.value)
+      : Math.floor(availableStock.value)
+  )
+
   const stockQty = computed(() =>
     parseFloat(props.product?.stock_quantity ?? 0)
   )
-  const isOutOfStock = computed(() => stockQty.value <= 0)
+  // const isOutOfStock = computed(() => stockQty.value <= 0)
   const isLowStock = computed(
     () =>
       props.product?.reorder_level != null &&
@@ -390,9 +419,6 @@
   })
 
   // ── Normal sale helpers ────────────────────────────────────────────────────
-  const maxQtyNoUnit = computed(() => Math.floor(stockQty.value))
-  const maxForUnit = unit =>
-    Math.floor(stockQty.value / parseFloat(unit.qty_per_base ?? 1))
 
   const unitPriceFor = unit => {
     if (customerType.value === 'wholesale' && unit.wholesale_price)
@@ -413,10 +439,6 @@
   })
 
   // ── Lid exchange helpers ───────────────────────────────────────────────────
-  const lidMaxQty = computed(() => {
-    if (selectedUnit.value) return maxForUnit(selectedUnit.value)
-    return Math.floor(stockQty.value)
-  })
 
   const effectiveTopup = computed(() =>
     customTopup.value > 0
@@ -433,31 +455,21 @@
   })
 
   // ── Reset on product change ────────────────────────────────────────────────
-  watch(
-    () => props.product,
-    () => {
-      qty.value = 1
-      selectedUnit.value = null
-      customTopup.value = null
-      topupPreset.value = 500
+  watch(model, val => {
+    if (!val) return // closing — do nothing
+    qty.value = 1
+    selectedUnit.value = null
+    customTopup.value = null
+    topupPreset.value = 500
 
-      if (hasUnits.value) {
-        if (isLidExchange.value) {
-          // lid exchange → always pick qty_per_base === 1
-          selectedUnit.value =
-            props.product.active_units.find(
-              u => Number(u.qty_per_base) === 1
-            ) ?? null
-        } else {
-          // normal sale → pick base unit or first
-          selectedUnit.value =
-            props.product.active_units.find(u => u.is_base_unit) ??
-            props.product.active_units[0]
-        }
-      }
-    },
-    { immediate: true }
-  )
+    if (hasUnits.value) {
+      selectedUnit.value = isLidExchange.value
+        ? props.product.active_units.find(u => Number(u.qty_per_base) === 1) ??
+          null
+        : props.product.active_units.find(u => u.is_base_unit) ??
+          props.product.active_units[0]
+    }
+  })
 
   watch(isLidExchange, val => {
     qty.value = 1
@@ -502,10 +514,7 @@
         stock_quantity: props.product.stock_quantity,
         product_unit_id: selectedUnit.value?.id ?? null,
         name: props.product.name,
-        unit_name:
-          selectedUnit.value?.unit_name ??
-          props.product.unit ??
-          'pcs',
+        unit_name: selectedUnit.value?.unit_name ?? props.product.unit ?? 'pcs',
         qty_per_base: selectedUnit.value?.qty_per_base ?? 1,
         price: effectiveTopup.value,
         topup_amount: effectiveTopup.value,
@@ -522,10 +531,7 @@
         stock_quantity: props.product.stock_quantity,
         product_unit_id: selectedUnit.value?.id ?? null,
         name: props.product.name,
-        unit_name:
-          selectedUnit.value?.unit_name ??
-          props.product.unit ??
-          'pcs',
+        unit_name: selectedUnit.value?.unit_name ?? props.product.unit ?? 'pcs',
         qty_per_base: selectedUnit.value?.qty_per_base ?? 1,
         price: selectedUnit.value
           ? unitPriceFor(selectedUnit.value)

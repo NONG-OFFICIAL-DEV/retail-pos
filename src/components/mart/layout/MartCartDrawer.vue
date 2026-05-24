@@ -65,20 +65,20 @@
                   density="compact"
                   small
                   :min="0"
-                  :max="item.stock_quantity"
+                  :max="maxQtyForItem(item)"
                   @update:model-value="
                     val => emit('update-qty', item._key, val)
                   "
                 />
               </div>
               <div
-                v-if="!item._is_lid_exchange && item.qty >= item.stock_quantity"
+                v-if="!item._is_lid_exchange && item.qty >= maxQtyForItem(item)"
                 class="text-caption text-warning d-flex align-center gap-1 mt-1"
               >
                 <v-icon icon="mdi-alert-outline" size="11" />
                 {{
                   t('common.max_stock_reached', {
-                    stock: item.stock_quantity,
+                    stock: maxQtyForItem(item),
                     unit: item.unit
                   })
                 }}
@@ -168,7 +168,6 @@
             <div class="text-tiny font-weight-bold">{{ method.label }}</div>
           </v-card>
         </div>
-
         <!-- Pay Button -->
         <v-btn
           block
@@ -243,6 +242,22 @@
     appliedDiscountLabel.value = ''
   }
 
+  const maxQtyForItem = item => {
+    if (item._is_lid_exchange) return Infinity
+    const stockQty = item.stock_quantity ?? 0
+    const otherReserved = mart.cartItems
+      .filter(
+        i =>
+          i.product_id === item.product_id &&
+          i._key !== item._key &&
+          !i._is_lid_exchange
+      )
+      .reduce((sum, i) => sum + i.qty * (i.qty_per_base ?? 1), 0)
+    return Math.max(
+      1,
+      Math.floor((stockQty - otherReserved) / (item.qty_per_base ?? 1))
+    )
+  }
   // ─────────────────────────────────────────────────────────────
   const paymentMethods = computed(() => [
     { id: 'cash', icon: 'mdi-cash', label: t('orders.cash') },
