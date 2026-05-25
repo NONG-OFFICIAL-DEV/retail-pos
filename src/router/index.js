@@ -18,6 +18,10 @@ const routes = [
         component: () => import('@/views/mart/MartPosView.vue')
       }
     ]
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: () => ({ name: 'MartPos' })
   }
 ]
 

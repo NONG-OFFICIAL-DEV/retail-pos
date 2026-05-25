@@ -1,8 +1,17 @@
 <template>
   <v-app class="bg-grey-lighten-5">
     <!-- ── App Bar ──────────────────────────────────────────────────────────── -->
-    <MartAppBar v-model:search="search" :operator="operator" @logout="logout" />
-
+    <MartAppBar
+      v-model:search="search"
+      :operator="operator"
+      @logout="logout"
+      @open-branch-switcher="branchDrawer = true"
+    />
+    <BranchSwitcherDrawer
+      v-if="authStore.isOwner"
+      v-model="branchDrawer"
+      @branch-changed="onBranchChanged"
+    />
     <!-- ── Cart Drawer ──────────────────────────────────────────────────────── -->
     <MartCartDrawer
       :cart="cart"
@@ -83,9 +92,12 @@
   import MartCartDrawer from '@/components/mart/layout/MartCartDrawer.vue'
   import MartFooter from '@/components/mart/layout/MartFooter.vue'
   import CashPaymentDialog from '@/components/mart/CashPaymentDialog.vue'
+  import BranchSwitcherDrawer from '@/components/BranchSwitcherDrawer.vue'
   import { useAuthStore } from '@/stores/authStore'
   import { useRouter } from 'vue-router'
   import { useMartStore } from '@/stores/martStore'
+  import { useProductStore } from '@/stores/productStore'
+  import { useCategoryStore } from '@/stores/categoryStore'
   import { useAppUtils } from '@/composables/useAppUtils'
   import { useI18n } from 'vue-i18n'
   import { useReceipt } from '@/utils/printReceipt'
@@ -105,6 +117,8 @@
     printMethod
   } = useReceipt()
 
+  const productStore = useProductStore()
+  const categoryStore = useCategoryStore()
   const martStore = useMartStore()
   const authStore = useAuthStore()
   const router = useRouter()
@@ -112,7 +126,14 @@
   const receipt = ref(null)
   const cashDialog = ref(false)
   const printDialog = ref(false)
+  const branchDrawer = ref(false)
 
+  async function onBranchChanged(branch) {
+    await Promise.all([
+      productStore.fetchProducts({ branch_id: branch.id }),
+      categoryStore.fetchCategories({ branch_id: branch.id })
+    ])
+  }
   // ── Android printer check ─────────────────────────────────────────────────
   const isAndroid = () => /android/i.test(navigator.userAgent)
 
@@ -173,7 +194,7 @@
 
   // ── Checkout — check printer first on Android ─────────────────────────────
   const completeOrder = async () => {
-    if (!checkPrinterBeforeCheckout()) return  // ← stop if not connected
+    if (!checkPrinterBeforeCheckout()) return // ← stop if not connected
 
     if (cart.value?.paymentMethod === 'cash') {
       cashDialog.value = true
@@ -183,7 +204,7 @@
   }
 
   const confirmCashPayment = async ({ cash_received, change }) => {
-    if (!checkPrinterBeforeCheckout()) return  // ← stop if not connected
+    if (!checkPrinterBeforeCheckout()) return // ← stop if not connected
 
     cashDialog.value = false
     await processCheckout({

@@ -18,6 +18,7 @@ export function useMartPos() {
     buName: auth.bu_name ?? '',
     branchId: auth.branch_id ?? null,
     avatar: auth.me?.avatar ?? null,
+    isOwner: auth.isOwner ?? null,
     initials: getInitials(auth.me?.first_name, auth.me?.last_name),
     notificationsCount: auth.unread_notifications_count ?? 0
   }))
