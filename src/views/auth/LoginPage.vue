@@ -19,7 +19,7 @@
           <div class="illustration-ring ring-2" />
           <div class="illustration-ring ring-3" />
           <div class="left-icon-wrap">
-            <v-icon size="64" color="white">mdi-cart-outline</v-icon>
+            <v-avatar image="/logo.png" size="64" rounded="lg"></v-avatar>
           </div>
           <div class="left-headline mt-6">
             Fast checkout.
@@ -420,7 +420,7 @@
   .left-icon-wrap {
     width: 100px;
     height: 100px;
-    background: rgba(255, 255, 255, 0.12);
+    background: white;
     border-radius: 28px;
     display: flex;
     align-items: center;

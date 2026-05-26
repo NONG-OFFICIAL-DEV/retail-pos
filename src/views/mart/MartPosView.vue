@@ -4,7 +4,7 @@
     <v-row class="mt-2" dense>
       <!-- Skeleton -->
       <template v-if="isLoading">
-        <v-col v-for="n in 12" :key="n" cols="6" sm="3" md="2">
+        <v-col v-for="n in 18" :key="n" cols="6" sm="3" md="2">
           <v-skeleton-loader
             type="image, list-item-two-line"
             rounded="xl"
@@ -14,137 +14,141 @@
       </template>
 
       <!-- Empty -->
-      <v-col v-else-if="isEmpty" cols="12" class="text-center py-12">
-        <v-icon icon="mdi-magnify-close" size="64" color="grey-lighten-1" />
-        <div class="text-h6 text-grey mt-4">No products found</div>
-        <p class="text-caption text-grey">
-          Try adjusting your search or category
-        </p>
-      </v-col>
+      <template v-else-if="isEmpty">
+        <v-col cols="12" class="text-center py-12">
+          <v-icon icon="mdi-magnify-close" size="64" color="grey-lighten-1" />
+          <div class="text-h6 text-grey mt-4">No products found</div>
+          <p class="text-caption text-grey">
+            Try adjusting your search or category
+          </p>
+        </v-col>
+      </template>
 
       <!-- Product cards -->
-      <v-col
-        v-for="product in products"
-        :key="product.id"
-        cols="6"
-        sm="3"
-        md="2"
-      >
-        <v-card
-          class="product-card"
-          :class="{
-            'product-card--out': isOutOfStock(product),
-            'product-card--low': isLowStock(product),
-            'product-card--disabled': isOutOfStock(product)
-          }"
-          :ripple="!isOutOfStock(product)"
-          @click="isOutOfStock(product) ? null : openPicker(product)"
+      <template v-else>
+        <v-col
+          v-for="product in products"
+          :key="product.id"
+          cols="6"
+          sm="3"
+          md="2"
         >
-          <!-- ── Image area ─────────────────────────────────────────────── -->
-          <div
-            class="product-img-wrap"
-            :class="{ 'img-out': isOutOfStock(product) }"
+          <v-card
+            class="product-card"
+            :class="{
+              'product-card--out': isOutOfStock(product),
+              'product-card--low': isLowStock(product),
+              'product-card--disabled': isOutOfStock(product)
+            }"
+            :ripple="!isOutOfStock(product)"
+            @click="isOutOfStock(product) ? null : openPicker(product)"
           >
-            <!-- Image with fallback -->
-            <div v-if="product.image_url" class="product-img">
-              <img
-                :src="product.image_url"
-                :alt="product.name"
-                class="product-img__img"
-                @error="e => (e.target.style.display = 'none')"
-              />
+            <!-- ── Image area ─────────────────────────────────────────────── -->
+            <div
+              class="product-img-wrap"
+              :class="{ 'img-out': isOutOfStock(product) }"
+            >
+              <!-- Image with fallback -->
+              <div v-if="product.image_url" class="product-img">
+                <img
+                  :src="product.image_url"
+                  :alt="product.name"
+                  class="product-img__img"
+                  @error="e => (e.target.style.display = 'none')"
+                />
+              </div>
+
+              <!-- Fallback placeholder when no image -->
+              <div v-else class="product-img product-img--placeholder">
+                <div class="placeholder-initial">
+                  {{ product.name?.charAt(0)?.toUpperCase() }}
+                </div>
+                <div class="placeholder-name text-caption text-medium-emphasis">
+                  {{ product.name }}
+                </div>
+              </div>
+
+              <!-- Out of stock overlay -->
+              <div v-if="isOutOfStock(product)" class="out-overlay">
+                <v-icon
+                  icon="mdi-close-circle"
+                  size="28"
+                  color="white"
+                  class="mb-1"
+                />
+                <div class="text-caption font-weight-bold text-white">
+                  Out of Stock
+                </div>
+              </div>
+
+              <!-- Low stock badge (top right) -->
+              <v-chip
+                v-else-if="isLowStock(product)"
+                size="x-small"
+                color="warning"
+                variant="flat"
+                rounded="lg"
+                class="stock-badge"
+              >
+                <v-icon start size="10" icon="mdi-alert" />
+                Low
+              </v-chip>
+
+              <!-- Stock qty badge (bottom left) -->
+              <v-chip
+                size="x-small"
+                variant="flat"
+                rounded="lg"
+                class="qty-badge"
+                :color="stockChipColor(product)"
+              >
+                {{ fmtQty(product.stock_quantity) }}
+              </v-chip>
             </div>
 
-            <!-- Fallback placeholder when no image -->
-            <div v-else class="product-img product-img--placeholder">
-              <div class="placeholder-initial">
-                {{ product.name?.charAt(0)?.toUpperCase() }}
-              </div>
-              <div class="placeholder-name text-caption text-medium-emphasis">
+            <!-- ── Info area ──────────────────────────────────────────────── -->
+            <v-card-text class="pa-2 pt-2">
+              <div class="product-name text-body-2 font-weight-bold mb-1">
                 {{ product.name }}
               </div>
-            </div>
 
-            <!-- Out of stock overlay -->
-            <div v-if="isOutOfStock(product)" class="out-overlay">
-              <v-icon
-                icon="mdi-close-circle"
-                size="28"
-                color="white"
-                class="mb-1"
-              />
-              <div class="text-caption font-weight-bold text-white">
-                Out of Stock
+              <!-- Price -->
+              <div
+                v-if="product.active_units?.length"
+                class="text-caption text-primary font-weight-black"
+              >
+                {{ t('common.from') }} {{ formatKHR(minPrice(product)) }}
               </div>
-            </div>
+              <div v-else class="text-caption text-primary font-weight-black">
+                {{ formatKHR(product.selling_price ?? product.base_price) }}
+              </div>
 
-            <!-- Low stock badge (top right) -->
-            <v-chip
-              v-else-if="isLowStock(product)"
-              size="x-small"
-              color="warning"
-              variant="flat"
-              rounded="lg"
-              class="stock-badge"
-            >
-              <v-icon start size="10" icon="mdi-alert" />
-              Low
-            </v-chip>
-
-            <!-- Stock qty badge (bottom left) -->
-            <v-chip
-              size="x-small"
-              variant="flat"
-              rounded="lg"
-              class="qty-badge"
-              :color="stockChipColor(product)"
-            >
-              {{ fmtQty(product.stock_quantity) }}
-            </v-chip>
-          </div>
-
-          <!-- ── Info area ──────────────────────────────────────────────── -->
-          <v-card-text class="pa-2 pt-2">
-            <div class="product-name text-body-2 font-weight-bold mb-1">
-              {{ product.name }}
-            </div>
-
-            <!-- Price -->
-            <div
-              v-if="product.active_units?.length"
-              class="text-caption text-primary font-weight-black"
-            >
-              {{ t('common.from') }} {{ formatKHR(minPrice(product)) }}
-            </div>
-            <div v-else class="text-caption text-primary font-weight-black">
-              {{ formatKHR(product.selling_price ?? product.base_price) }}
-            </div>
-
-            <!-- Unit chips -->
-            <div class="d-flex gap-1 flex-wrap mt-1">
-              <v-chip
-                v-for="u in product.active_units?.slice(0, 2)"
-                :key="u.id"
-                size="x-small"
-                variant="tonal"
-                rounded="lg"
-                :color="u.is_base_unit ? 'primary' : 'default'"
-              >
-                {{ u.unit_name }}
-              </v-chip>
-              <v-chip
-                v-if="(product.active_units?.length ?? 0) > 2"
-                size="x-small"
-                variant="tonal"
-                rounded="lg"
-                color="grey"
-              >
-                +{{ product.active_units.length - 2 }}
-              </v-chip>
-            </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
+              <!-- Unit chips -->
+              <div class="d-flex gap-1 flex-wrap mt-1">
+                <v-chip
+                  v-for="u in product.active_units?.slice(0, 2)"
+                  :key="u.id"
+                  size="x-small"
+                  variant="tonal"
+                  rounded="lg"
+                  :color="u.is_base_unit ? 'primary' : 'default'"
+                >
+                  {{ u.unit_name }}
+                </v-chip>
+                <v-chip
+                  v-if="(product.active_units?.length ?? 0) > 2"
+                  size="x-small"
+                  variant="tonal"
+                  rounded="lg"
+                  color="grey"
+                >
+                  +{{ product.active_units.length - 2 }}
+                </v-chip>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </template>
     </v-row>
     <!-- Unit Picker Dialog -->
     <ProductUnitPicker
