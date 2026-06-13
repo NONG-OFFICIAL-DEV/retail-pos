@@ -11,9 +11,18 @@ export const useProductStore = defineStore('product', {
       const res = await productService.getProducts(filterParams, loading)
       this.products = res.data.data
     },
-    async scanProduct(barcode) {
-      const res = await productService.productsScan(barcode)
-      return res.data
+    async lookupProductByBarcode(barcode) {
+      const data = await productService.scanBarcode(barcode) // your renamed fn
+
+      // Merge into local list if not already there
+      const exists = this.products.find(p => p.id === data.id)
+      if (!exists) this.products.push(data)
+
+      return data
     }
+    // async lookupProductByBarcode(barcode) {
+    //   const res = await productService.scanBarcode(barcode)
+    //   return res.data
+    // }
   }
 })

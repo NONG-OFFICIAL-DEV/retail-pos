@@ -20,176 +20,213 @@
       </div>
     </div>
 
-    <v-divider
-      vertical
-      class="mx-2 border-opacity-20"
-      style="height: 24px; align-self: center"
-    />
-
-    <!-- Search — grows but won't push right-block off screen -->
-    <v-responsive max-width="400" min-width="120" class="flex-grow-1 mx-3">
-      <v-text-field
-        :model-value="search"
-        :placeholder="t('common.search')"
-        variant="outlined"
-        density="compact"
-        hide-details
-        class="search-field"
-        bg-color="grey-lighten-5"
-        @update:model-value="emit('update:search', $event)"
-      >
-        <template #prepend-inner>
-          <v-icon
-            icon="mdi-magnify"
-            color="grey-darken-1"
-            size="16"
-            class="mr-1"
-          />
-        </template>
-        <!-- hide ⌘K chip on small tablets to save space -->
-        <template #append-inner>
-          <v-chip
-            size="x-small"
-            variant="tonal"
-            color="grey"
-            class="cmd-chip d-none d-md-flex"
+    <v-app-bar-title>
+      <v-responsive max-width="400" class="mx-auto">
+        <div class="d-flex align-center">
+          <v-text-field
+            :model-value="search"
+            :placeholder="t('common.search')"
+            variant="outlined"
+            density="compact"
+            hide-details
+            class="search-field mx-auto"
+            bg-color="grey-lighten-5"
+            @update:model-value="emit('update:search', $event)"
+            @keydown.enter.prevent="onSearchEnter"
           >
-            ⌘K
-          </v-chip>
-        </template>
-      </v-text-field>
-    </v-responsive>
-
-    <v-spacer />
+            <template #prepend-inner>
+              <v-icon
+                icon="mdi-magnify"
+                color="grey-darken-1"
+                size="16"
+                class="mr-1"
+              />
+            </template>
+            <template #append-inner>
+              <v-chip
+                size="x-small"
+                variant="tonal"
+                color="grey"
+                class="cmd-chip d-none d-md-flex"
+              >
+                ⌘K
+              </v-chip>
+            </template>
+          </v-text-field>
+          <!-- Scan test button — sits right after the search box -->
+          <v-btn
+            icon="mdi-barcode-scan"
+            variant="tonal"
+            size="small"
+            rounded="lg"
+            color="primary"
+            class="ml-1 mr-2"
+            title="Scan barcode (test)"
+            @click="openScanDialog"
+          />
+        </div>
+      </v-responsive>
+    </v-app-bar-title>
 
     <!-- Right block — shrinks gracefully -->
-    <div class="right-block">
-      <!-- Clock: hide date label on xs -->
-      <div class="datetime-block mr-3">
-        <div class="dt-time">{{ currentTime }}</div>
-        <div class="dt-date d-none d-sm-block">{{ currentDate }}</div>
-      </div>
+    <template v-slot:append>
+      <div class="right-block">
+        <LanguageSwicher />
+        <v-divider vertical class="border-opacity-20 mx-2" />
 
-      <v-divider
-        vertical
-        class="border-opacity-20 mx-2"
-        style="height: 24px; align-self: center"
-      />
-      <LanguageSwicher />
-      <v-divider
-        vertical
-        class="border-opacity-20 mx-2"
-        style="height: 24px; align-self: center"
-      />
-
-      <!-- Fullscreen toggle -->
-      <v-btn
-        icon
-        variant="text"
-        size="small"
-        :color="isFullscreen ? 'primary' : 'grey-darken-1'"
-        rounded="lg"
-        class="mr-1"
-        :title="isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'"
-        @click="toggleFullscreen"
-      >
-        <v-icon
-          :icon="isFullscreen ? 'mdi-fullscreen-exit' : 'mdi-fullscreen'"
-          size="20"
-        />
-      </v-btn>
-
-      <v-divider
-        vertical
-        class="border-opacity-20 mx-2"
-        style="height: 24px; align-self: center"
-      />
-
-      <!-- Operator info: hide on small screens, show on md+ -->
-      <div class="operator-info mr-3 d-none d-lg-block">
-        <div class="op-label">
-          {{ operator.roleName?.toUpperCase() || 'OPERATOR' }}
-        </div>
-        <div class="op-name">
-          {{ operator.displayName?.toUpperCase() || '—' }}
-        </div>
-      </div>
-
-      <!-- Avatar + menu -->
-      <v-menu location="bottom end" :offset="[8, 0]">
-        <template #activator="{ props: mp }">
-          <v-avatar
-            v-bind="mp"
-            rounded="lg"
-            size="34"
-            color="primary"
-            class="op-avatar cursor-pointer"
-          >
-            <v-img v-if="operator.avatar" :src="operator.avatar" cover />
-            <span v-else class="text-body-2 font-weight-black text-white">
-              {{ operator.initials }}
-            </span>
-          </v-avatar>
-        </template>
-
-        <v-card
-          width="230"
+        <!-- Fullscreen toggle -->
+        <v-btn
+          icon
+          variant="text"
+          size="small"
+          :color="isFullscreen ? 'primary' : 'grey-darken-1'"
           rounded="lg"
-          elevation="4"
-          border
-          class="dropdown-card mt-1"
+          class="mr-1"
+          :title="isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'"
+          @click="toggleFullscreen"
         >
-          <div class="dropdown-header pa-4">
-            <div class="d-flex align-center gap-3">
-              <v-avatar rounded="lg" size="38" color="primary">
-                <span class="text-body-2 font-weight-black text-white">
-                  {{ operator.initials }}
-                </span>
-              </v-avatar>
-              <div class="flex-grow-1 min-w-0">
-                <div class="text-body-2 font-weight-bold text-truncate">
-                  {{ operator.displayName }}
+          <v-icon
+            :icon="isFullscreen ? 'mdi-fullscreen-exit' : 'mdi-fullscreen'"
+            size="20"
+          />
+        </v-btn>
+
+        <v-divider vertical class="border-opacity-20 mx-2" />
+
+        <!-- Operator info: hide on small screens, show on md+ -->
+        <div class="operator-info mr-3 d-none d-lg-block">
+          <div class="op-label">
+            {{ operator.roleName?.toUpperCase() || 'OPERATOR' }}
+          </div>
+          <div class="op-name">
+            {{ operator.displayName?.toUpperCase() || '—' }}
+          </div>
+        </div>
+
+        <!-- Avatar + menu -->
+        <v-menu location="bottom end" :offset="[8, 0]">
+          <template #activator="{ props: mp }">
+            <v-avatar
+              v-bind="mp"
+              rounded="lg"
+              size="34"
+              color="primary"
+              class="op-avatar cursor-pointer"
+            >
+              <v-img v-if="operator.avatar" :src="operator.avatar" cover />
+              <span v-else class="text-body-2 font-weight-black text-white">
+                {{ operator.initials }}
+              </span>
+            </v-avatar>
+          </template>
+
+          <v-card
+            width="230"
+            rounded="lg"
+            elevation="4"
+            border
+            class="dropdown-card mt-1"
+          >
+            <div class="pa-4">
+              <div class="d-flex align-center gap-3">
+                <v-avatar rounded="lg" size="38" color="primary">
+                  <span class="text-body-2 font-weight-black text-white">
+                    {{ operator.initials }}
+                  </span>
+                </v-avatar>
+                <div class="flex-grow-1 min-w-0">
+                  <div class="text-body-2 font-weight-bold text-truncate">
+                    {{ operator.displayName }}
+                  </div>
+                  <v-chip
+                    size="x-small"
+                    color="primary"
+                    variant="tonal"
+                    rounded="lg"
+                    class="mt-1"
+                  >
+                    {{ operator.branchName }}
+                  </v-chip>
                 </div>
-                <div class="text-caption text-medium-emphasis">
-                  {{ operator.roleName || 'POS Cashier' }}
-                </div>
-                <v-chip
-                  size="x-small"
-                  color="primary"
-                  variant="tonal"
-                  rounded="lg"
-                  class="mt-1"
-                >
-                  {{ operator.branchName }}
-                </v-chip>
               </div>
             </div>
-          </div>
-          <v-divider />
+            <v-divider />
 
-          <v-list density="compact" class="pa-1">
-            <template v-if="operator.isOwner">
+            <v-list density="compact" class="pa-1">
+              <template v-if="operator.isOwner">
               <v-list-item
                 prepend-icon="mdi-store-cog-outline"
                 title="Switch Branch"
                 rounded="lg"
                 slim
                 @click="emit('open-branch-switcher')"
-              />
-              <v-divider class="my-1" />
-            </template>
-            <v-list-item
-              prepend-icon="mdi-logout"
-              title="Logout"
-              rounded="lg"
-              base-color="error"
-              slim
-              @click="emit('logout')"
-            />
-          </v-list>
-        </v-card>
-      </v-menu>
-    </div>
+              >
+                <template #append>
+                  <v-icon size="14" color="medium-emphasis">
+                    mdi-chevron-right
+                  </v-icon>
+                </template>
+              </v-list-item>
+              </template>
+            </v-list>
+            <v-divider v-if="operator.isOwner"/>
+            <!-- Logout -->
+            <div class="pa-3">
+              <v-btn
+                block
+                variant="tonal"
+                rounded="lg"
+                color="error"
+                prepend-icon="mdi-logout"
+                @click="emit('logout')"
+              >
+                {{ t('common.logout') }}
+              </v-btn>
+            </div>
+          </v-card>
+        </v-menu>
+      </div>
+    </template>
+    <!-- Test scan dialog -->
+    <v-dialog v-model="scanDialog" max-width="320">
+      <v-card rounded="xl" border elevation="0">
+        <v-card-text class="pa-4">
+          <div
+            class="text-body-2 font-weight-bold mb-3 d-flex align-center gap-2"
+          >
+            <v-icon icon="mdi-barcode-scan" color="primary" size="18" class="mr-2"/>
+            {{ t('common.scan_barcode') ?? 'Scan / Enter Barcode' }}
+          </div>
+          <v-text-field
+            ref="scanInputRef"
+            v-model="scanInput"
+            variant="outlined"
+            density="compact"
+            rounded="lg"
+            hide-details
+            autofocus
+            placeholder="e.g. 8850006140013"
+            @keydown.enter.prevent="submitScan"
+          />
+        </v-card-text>
+        <v-card-actions class="pa-4 pt-0 gap-2">
+          <v-btn variant="tonal" rounded="lg" @click="scanDialog = false">
+            {{ t('btn.cancel') ?? 'Cancel' }}
+          </v-btn>
+          <v-btn
+            color="primary"
+            variant="flat"
+            rounded="lg"
+            class="flex-grow-1"
+            prepend-icon="mdi-check"
+            :disabled="!scanInput.trim()"
+            @click="submitScan"
+          >
+            {{ t('btn.confirm') ?? 'Confirm' }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-app-bar>
 </template>
 
@@ -215,8 +252,12 @@
     }
   })
 
-  const emit = defineEmits(['update:search', 'logout','open-branch-switcher'])
-
+  const emit = defineEmits([
+    'update:search',
+    'logout',
+    'open-branch-switcher',
+    'scan'
+  ])
   // Clock
   const now = ref(new Date())
   let timer = null
@@ -256,6 +297,31 @@
       document.exitFullscreen().catch(() => {})
     }
   }
+  // ── Scan dialog (for testing without a real scanner) ──────────────────────
+  const scanDialog = ref(false)
+  const scanInput = ref('')
+
+  const openScanDialog = () => {
+    scanInput.value = ''
+    scanDialog.value = true
+  }
+
+  const submitScan = () => {
+    const code = scanInput.value.trim()
+    if (!code) return
+    emit('scan', code) // ← emit up to MartLayout
+    scanInput.value = ''
+    scanDialog.value = false
+  }
+
+  // Search bar Enter → also triggers scan if value looks like a barcode
+  const onSearchEnter = () => {
+    const val = props.search.trim()
+    if (/^\d{6,14}$/.test(val)) {
+      emit('scan', val)
+      emit('update:search', '') // clear search box
+    }
+  }
 
   onMounted(() => {
     document.addEventListener('fullscreenchange', () => {
@@ -268,7 +334,6 @@
   .mart-appbar {
     background: #ffffff !important;
     border-bottom: 1px solid #e2e8f0 !important;
-    /* ensure it never wraps or causes overflow */
     overflow: hidden;
   }
 
@@ -365,7 +430,6 @@
     display: flex;
     align-items: center;
     flex-shrink: 0;
-    /* prevent right block from ever wrapping */
     min-width: 0;
   }
 
@@ -410,10 +474,6 @@
   .dropdown-card {
     border: 1px solid #e2e8f0 !important;
   }
-  .dropdown-header {
-    background: #f8fafc;
-  }
-
   /* ── Utilities ── */
   .gap-1 {
     gap: 4px;

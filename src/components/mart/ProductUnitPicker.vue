@@ -74,18 +74,34 @@
             rounded="lg"
             variant="outlined"
           >
-            <v-btn value="retail" size="small" class="text-none px-3">
+            <v-btn
+              value="retail"
+              size="small"
+              class="text-none px-3"
+              :color="customerType === 'retail' ? 'primary' : ''"
+            >
+              <v-icon start size="14" icon="mdi-account" />
               {{ t('unit.retail') }}
             </v-btn>
-            <v-btn value="wholesale" size="small" class="text-none px-3">
+
+            <v-btn
+              value="wholesale"
+              size="small"
+              class="text-none px-3"
+              :color="customerType === 'wholesale' ? 'success' : ''"
+            >
+              <v-icon start size="14" icon="mdi-store" />
               {{ t('unit.wholsale') }}
             </v-btn>
+
             <v-btn
               v-if="product.category.is_lid_exchange"
               value="lid_exchange"
               size="small"
               class="text-none px-3"
+              :color="customerType === 'lid_exchange' ? 'warning' : ''"
             >
+              <v-icon start size="14" icon="mdi-swap-horizontal" />
               {{ t('lid_exchange.title') }}
             </v-btn>
           </v-btn-toggle>
@@ -461,6 +477,7 @@
     selectedUnit.value = null
     customTopup.value = null
     topupPreset.value = 500
+    customerType.value = 'retail'
 
     if (hasUnits.value) {
       selectedUnit.value = isLidExchange.value

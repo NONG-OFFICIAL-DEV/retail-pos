@@ -9,7 +9,7 @@ export const productService = {
 
     return res.data
   },
-  async productsScan(barcode) {
-    return await http.get(`/products/scan/${barcode}`)
+  async scanBarcode(barcode) {
+    return await http.post(`/v1/mart/pos/scan/${barcode}`)
   }
 }

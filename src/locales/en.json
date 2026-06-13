@@ -40,7 +40,9 @@
     "in_stock": "In stock · {qty} {unit}",
     "exceeds_stock": "The quantity exceeds available stock",
     "max_stock_reached": "Only {stock} {unit} in stock",
-    "cannot_add":"Cannot add"
+    "cannot_add":"Cannot add",
+    "scan_barcode":"Scan Barcode",
+    "logout": "Logout"
   },
   "lang": {
     "km": "Khmer",
@@ -50,7 +52,8 @@
     "addedToCart": "Added to cart",
     "orderPlaced": "Order placed successfully",
     "orderCancelled": "Order cancelled",
-    "limitOrder": "Only 5 orders per item can be ordered."
+    "limitOrder": "Only 5 orders per item can be ordered.",
+    "product_not_found": "Product not found for the scanned barcode."
   },
   "messages": {
     "thank": "Thank you for your order!",

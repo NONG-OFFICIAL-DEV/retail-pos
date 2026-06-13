@@ -162,7 +162,7 @@
 </template>
 
 <script setup>
-  import { ref, computed, onMounted } from 'vue'
+  import { ref, computed, onMounted, watch } from 'vue'
   import { useProductStore } from '@/stores/productStore'
   import { useCategoryStore } from '@/stores/categoryStore'
   import { useMartStore } from '@/stores/martStore'
@@ -175,8 +175,10 @@
   const { t } = useI18n()
   const { notif } = useAppUtils()
 
-  const props = defineProps({ search: { type: String, default: '' } })
-
+  const props = defineProps({
+    search: { type: String, default: '' },
+    scannedBarcode: { type: String, default: '' }
+  })
   const productStore = useProductStore()
   const categoryStore = useCategoryStore()
   const martStore = useMartStore()
@@ -279,6 +281,64 @@
       _is_lid_exchange: payload._is_lid_exchange ?? false
     })
     notif(t('notification.addedToCart'), { type: 'success', color: 'primary' })
+  }
+
+  // ── Barcode scan handler ───────────────────────────────────────────────────
+  const isScanning = ref(false) // prevents double-scan
+
+  watch(
+    () => props.scannedBarcode,
+    async barcode => {
+      if (!barcode || isScanning.value) return
+      isScanning.value = true
+
+      try {
+        await handleBarcodeScan(barcode)
+      } finally {
+        isScanning.value = false
+      }
+    }
+  )
+
+  const handleBarcodeScan = async barcode => {
+    // 1️⃣ Try local product list first (instant, no API call)
+    const localProduct = productStore.products.find(p => p.barcode === barcode)
+
+    if (localProduct) {
+      if (isOutOfStock(localProduct)) {
+        notif(t('common.out_of_stock'), { type: 'error', color: 'error' })
+        return
+      }
+      openPicker(localProduct) // ← your existing function, no changes needed
+      return
+    }
+
+    // 2️⃣ Not in local list → call API
+    try {
+      isLoading.value = true
+      const product = await productStore.lookupProductByBarcode(barcode)
+
+      if (isOutOfStock(product)) {
+        notif(t('common.out_of_stock'), { type: 'error', color: 'error' })
+        return
+      }
+
+      openPicker(product)
+    } catch (err) {
+      const status = err.response?.status
+      if (status === 404) {
+        notif(t('notification.product_not_found') ?? 'Product not found', {
+          type: 'error',
+          color: 'error'
+        })
+      } else if (status === 422) {
+        notif(t('common.out_of_stock'), { type: 'error', color: 'error' })
+      } else {
+        notif(t('common.scan_failed') ?? 'Scan failed', { type: 'error' })
+      }
+    } finally {
+      isLoading.value = false
+    }
   }
 
   onMounted(async () => {

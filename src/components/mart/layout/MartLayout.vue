@@ -5,7 +5,16 @@
       v-model:search="search"
       :operator="operator"
       @logout="logout"
+      @scan="onAppBarScan"
       @open-branch-switcher="branchDrawer = true"
+    />
+    <input
+      ref="barcodeInputRef"
+      v-model="barcodeBuffer"
+      class="barcode-capture"
+      autocomplete="off"
+      tabindex="-1"
+      @keydown.enter.prevent="onBarcodeEnter"
     />
     <BranchSwitcherDrawer
       v-if="authStore.isOwner"
@@ -27,7 +36,7 @@
     <v-main>
       <v-container fluid class="pa-0">
         <div class="mart-content">
-          <router-view :search="search" />
+          <router-view :search="search" :scanned-barcode="scannedBarcode"/>
         </div>
       </v-container>
     </v-main>
@@ -86,7 +95,7 @@
 </template>
 
 <script setup>
-  import { ref, watch } from 'vue'
+  import { ref, watch, onMounted, nextTick } from 'vue'
   import { useMartPos } from '@/composables/useMartPos'
   import MartAppBar from '@/components/mart/layout/MartAppBar.vue'
   import MartCartDrawer from '@/components/mart/layout/MartCartDrawer.vue'
@@ -214,12 +223,51 @@
   }
 
   const search = ref('')
+  // add these refs in <script setup>
+  const barcodeInputRef = ref(null)
+  const barcodeBuffer = ref('')
+  const scannedBarcode = ref('') // passed to router-view
+
+  const onAppBarScan = barcode => {
+    scannedBarcode.value = ''
+    nextTick(() => {
+      scannedBarcode.value = barcode
+    })
+  }
+  const onBarcodeEnter = () => {
+    const code = barcodeBuffer.value.trim()
+    barcodeBuffer.value = ''
+    if (!code) return
+    scannedBarcode.value = code // triggers watcher in ProductsView
+  }
+
+  // keep it always focused (scanners type into whatever is focused)
+  onMounted(() => {
+    document.addEventListener('click', () => {
+      // don't steal focus from real inputs (search box, qty fields, dialogs)
+      const tag = document.activeElement?.tagName
+      const isRealInput =
+        ['INPUT', 'TEXTAREA'].includes(tag) &&
+        document.activeElement !== barcodeInputRef.value
+      if (!isRealInput) barcodeInputRef.value?.focus()
+    })
+    barcodeInputRef.value?.focus()
+  })
 
   const { operator, cart, updateQty, removeItem, clearCart, setPayment } =
     useMartPos()
 </script>
 
 <style scoped>
+  .barcode-capture {
+    position: fixed;
+    opacity: 0;
+    pointer-events: none;
+    width: 1px;
+    height: 1px;
+    top: 0;
+    left: 0;
+  }
   .mart-content {
     height: calc(100vh - 60px - 32px);
     overflow-y: auto;
