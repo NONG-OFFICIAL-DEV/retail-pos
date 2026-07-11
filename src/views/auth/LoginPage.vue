@@ -529,27 +529,6 @@
     padding: 4px;
     gap: 4px;
   }
-  .tab-btn {
-    flex: 1;
-    padding: 9px 0;
-    border: none;
-    border-radius: 9px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #888;
-    background: transparent;
-    cursor: pointer;
-    transition: all 0.18s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .tab-btn.active {
-    background: white;
-    color: rgb(var(--v-theme-primary));
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  }
-
   /* PIN dots */
   .pin-dots-row {
     display: flex;
@@ -636,7 +615,9 @@
   }
 
   .mode-btn.active {
-    color: #0f172a;
+    background: white;
+    color: rgb(var(--v-theme-primary));
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   }
   /* Submit button */
   .submit-btn {

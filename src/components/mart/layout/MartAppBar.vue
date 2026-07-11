@@ -93,25 +93,6 @@
 
         <v-divider vertical class="border-opacity-20 mx-2" />
 
-        <!-- Fullscreen toggle -->
-        <v-btn
-          icon
-          variant="text"
-          size="small"
-          :color="isFullscreen ? 'primary' : 'grey-darken-1'"
-          rounded="lg"
-          class="mr-1"
-          :title="isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'"
-          @click="toggleFullscreen"
-        >
-          <v-icon
-            :icon="isFullscreen ? 'mdi-fullscreen-exit' : 'mdi-fullscreen'"
-            size="20"
-          />
-        </v-btn>
-
-        <v-divider vertical class="border-opacity-20 mx-2" />
-
         <!-- Operator info: hide on small screens, show on md+ -->
         <div class="operator-info mr-3 d-none d-lg-block">
           <div class="op-label">
@@ -187,8 +168,16 @@
                 </template>
               </v-list-item>
               </template>
+
+              <v-list-item
+                :prepend-icon="isFullscreen ? 'mdi-fullscreen-exit' : 'mdi-fullscreen'"
+                :title="isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'"
+                rounded="lg"
+                slim
+                @click="toggleFullscreen"
+              />
             </v-list>
-            <v-divider v-if="operator.isOwner"/>
+            <v-divider />
             <!-- Logout -->
             <div class="pa-3">
               <v-btn
@@ -250,7 +239,7 @@
 </template>
 
 <script setup>
-  import { ref, computed, onMounted, onUnmounted } from 'vue'
+  import { ref, computed, onMounted } from 'vue'
   import { useRoute } from 'vue-router'
   import LanguageSwicher from '@/components/customs/LanguageSwicher.vue'
   import { useI18n } from 'vue-i18n'
@@ -280,28 +269,6 @@
     'open-branch-switcher',
     'scan'
   ])
-  // Clock
-  const now = ref(new Date())
-  let timer = null
-  const currentTime = computed(() =>
-    now.value.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    })
-  )
-  const currentDate = computed(() =>
-    now.value.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric'
-    })
-  )
-  onMounted(() => {
-    timer = setInterval(() => (now.value = new Date()), 1000)
-  })
-  onUnmounted(() => clearInterval(timer))
-
   // Online status
   const isOnline = ref(navigator.onLine)
   onMounted(() => {
@@ -423,28 +390,6 @@
   .cmd-chip {
     font-size: 10px;
     font-weight: 700;
-  }
-
-  /* ── Clock ── */
-  .datetime-block {
-    text-align: right;
-    flex-shrink: 0;
-  }
-  .dt-time {
-    font-size: 13px;
-    font-weight: 800;
-    color: #0f172a;
-    letter-spacing: -0.3px;
-    line-height: 1.2;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-  }
-  .dt-date {
-    font-size: 9px;
-    font-weight: 600;
-    color: #94a3b8;
-    letter-spacing: 0.3px;
-    white-space: nowrap;
   }
 
   /* ── Right block ── */

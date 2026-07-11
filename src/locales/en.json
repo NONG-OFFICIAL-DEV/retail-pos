@@ -99,7 +99,13 @@
   },
   "printer": {
     "not_connected": "Please connect the printer before checkout.",
-    "disconnected": "Printer disconnected. Please reconnect and try again."
+    "disconnected": "Printer disconnected. Please reconnect and try again.",
+    "ready": "Printer Ready",
+    "connect": "Connect Printer"
+  },
+  "footer": {
+    "synced": "Synced",
+    "offline": "Offline"
   },
   "lid_exchange": {
     "title": "Lid Exchange",

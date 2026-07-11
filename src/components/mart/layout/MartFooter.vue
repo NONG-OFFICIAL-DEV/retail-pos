@@ -1,61 +1,93 @@
 <template>
-  <v-footer app color="white" border height="32" class="px-4">
+  <v-footer app color="white" border height="36" class="px-4">
     <div class="d-flex w-100 justify-space-between align-center">
+      <!-- Left: connectivity + printer status -->
+      <div class="d-flex align-center gap-2">
+        <v-chip
+          size="x-small"
+          variant="tonal"
+          rounded="lg"
+          :color="isOnline ? 'success' : 'warning'"
+          class="footer-chip"
+        >
+          <v-icon
+            start
+            size="11"
+            :icon="isOnline ? 'mdi-database-check' : 'mdi-database-off'"
+          />
+          {{ isOnline ? t('footer.synced') : t('footer.offline') }}
+        </v-chip>
 
-      <!-- Left: DB status -->
-      <div class="d-flex align-center gap-1">
-        <v-icon icon="mdi-database-check" size="14" color="success" />
-        <span class="footer-text">DB SYNCED</span>
+        <v-chip
+          v-if="usbSupported"
+          size="x-small"
+          variant="tonal"
+          rounded="lg"
+          :color="usbConnected ? 'success' : 'warning'"
+          class="footer-chip"
+          :class="{ 'cursor-pointer': !usbConnected }"
+          @click="!usbConnected && connectUsb?.()"
+        >
+          <v-icon
+            start
+            size="11"
+            :icon="usbConnected ? 'mdi-printer-check' : 'mdi-printer-off'"
+          />
+          {{ usbConnected ? t('printer.ready') : t('printer.connect') }}
+        </v-chip>
       </div>
 
-      <!-- Center: USB printer status (Android only) -->
-      <div v-if="usbSupported" class="d-flex align-center gap-1">
-        <template v-if="usbConnected">
-          <v-icon icon="mdi-printer-check" size="14" color="success" />
-          <span class="footer-text">PRINTER READY</span>
-        </template>
-        <template v-else>
-          <v-icon icon="mdi-printer-off" size="14" color="warning" />
-          <span
-            class="footer-text footer-link"
-            @click="connectUsb"
-          >CONNECT PRINTER</span>
-        </template>
-      </div>
-
-      <!-- Right: Version -->
+      <!-- Right: version -->
       <div class="footer-text">V.2.4.0-MART © {{ year }}</div>
-
     </div>
   </v-footer>
 </template>
 
 <script setup>
-defineProps({
-  connectUsb:   { type: Function, default: null },
-  usbConnected: { type: Boolean,  default: false },
-  usbSupported: { type: Boolean,  default: false },
-})
+  import { ref, onMounted, onUnmounted } from 'vue'
+  import { useI18n } from 'vue-i18n'
 
-const year = new Date().getFullYear()
+  const { t } = useI18n()
+
+  defineProps({
+    connectUsb: { type: Function, default: null },
+    usbConnected: { type: Boolean, default: false },
+    usbSupported: { type: Boolean, default: false }
+  })
+
+  const year = new Date().getFullYear()
+
+  const isOnline = ref(navigator.onLine)
+  const setOnline = () => (isOnline.value = true)
+  const setOffline = () => (isOnline.value = false)
+
+  onMounted(() => {
+    window.addEventListener('online', setOnline)
+    window.addEventListener('offline', setOffline)
+  })
+  onUnmounted(() => {
+    window.removeEventListener('online', setOnline)
+    window.removeEventListener('offline', setOffline)
+  })
 </script>
 
 <style scoped>
-.footer-text {
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  color: #94a3b8;
-}
-.footer-link {
-  color: #f59e0b;
-  cursor: pointer;
-  text-decoration: underline;
-}
-.footer-link:hover {
-  color: #d97706;
-}
-.gap-1 {
-  gap: 4px;
-}
+  .footer-text {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #94a3b8;
+  }
+  .footer-chip {
+    font-size: 0.6rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.4px;
+    height: 20px !important;
+  }
+  .cursor-pointer {
+    cursor: pointer;
+  }
+  .gap-2 {
+    gap: 8px;
+  }
 </style>
