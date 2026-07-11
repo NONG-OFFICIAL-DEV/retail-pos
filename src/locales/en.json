@@ -82,7 +82,17 @@
     "enter_amount_received": "Enter the amount received from customer.",
     "cash_received": "Cash Received",
     "change": "Change",
-    "order_placed": "Order Placed!"
+    "order_placed": "Order Placed!",
+    "history_title": "Order History",
+    "history_subtitle": "Browse past orders and reprint receipts",
+    "filter_today": "Today",
+    "filter_all": "All",
+    "search_placeholder": "Search by order number...",
+    "no_orders": "No orders found",
+    "back_to_pos": "Back to POS",
+    "payment_method": "Payment Method",
+    "reprint": "Reprint Receipt",
+    "status_completed": "Completed"
   },
   "product": {
     "all_product": "All Product"

@@ -16,6 +16,11 @@ const routes = [
         path: '',
         name: 'MartPos',
         component: () => import('@/views/mart/MartPosView.vue')
+      },
+      {
+        path: 'orders',
+        name: 'OrderHistory',
+        component: () => import('@/views/mart/OrderHistoryView.vue')
       }
     ]
   },

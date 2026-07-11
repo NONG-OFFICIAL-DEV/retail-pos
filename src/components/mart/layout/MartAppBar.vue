@@ -74,6 +74,25 @@
         <LanguageSwicher />
         <v-divider vertical class="border-opacity-20 mx-2" />
 
+        <!-- Order history / back to POS toggle -->
+        <v-btn
+          icon
+          variant="text"
+          size="small"
+          :color="isHistoryRoute ? 'primary' : 'grey-darken-1'"
+          rounded="lg"
+          class="mr-1"
+          :title="isHistoryRoute ? t('orders.back_to_pos') : t('orders.history_title')"
+          :to="isHistoryRoute ? { name: 'MartPos' } : { name: 'OrderHistory' }"
+        >
+          <v-icon
+            :icon="isHistoryRoute ? 'mdi-cash-register' : 'mdi-receipt-text-clock-outline'"
+            size="20"
+          />
+        </v-btn>
+
+        <v-divider vertical class="border-opacity-20 mx-2" />
+
         <!-- Fullscreen toggle -->
         <v-btn
           icon
@@ -232,10 +251,13 @@
 
 <script setup>
   import { ref, computed, onMounted, onUnmounted } from 'vue'
+  import { useRoute } from 'vue-router'
   import LanguageSwicher from '@/components/customs/LanguageSwicher.vue'
   import { useI18n } from 'vue-i18n'
 
   const { t } = useI18n()
+  const route = useRoute()
+  const isHistoryRoute = computed(() => route.name === 'OrderHistory')
 
   const props = defineProps({
     search: { type: String, default: '' },
