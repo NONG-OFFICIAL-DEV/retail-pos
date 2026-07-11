@@ -27,8 +27,12 @@ export const useMartStore = defineStore('mart', {
     //                              →  2 boxes = merged into qty: 2
     addToCart(product) {
       const unitId = product.product_unit_id ?? 'base'
-      const price = product.price
-      const key = `${product.id}__${unitId}_${price}`
+      // Lid exchange topups can legitimately differ per scan, so keep them on
+      // separate lines. Normal sale price is fully derived from customer type,
+      // so it must NOT be part of the key (setCustomerType mutates price only).
+      const key = product._is_lid_exchange
+        ? `${product.id}__${unitId}__${product.price}`
+        : `${product.id}__${unitId}`
       const existing = this.cartItems.find(i => i._key === key)
 
       if (existing) {
@@ -48,7 +52,8 @@ export const useMartStore = defineStore('mart', {
           qty: product.qty ?? 1,
           _unitData: product._unitData ?? null,
           customer_type: product.customer_type,
-          topup_amount:    product.topup_amount ?? null,
+          topup_amount: product.topup_amount ?? null,
+          _is_lid_exchange: product._is_lid_exchange ?? false
         })
       }
     },

@@ -64,6 +64,7 @@
                   :model-value="item.qty"
                   density="compact"
                   small
+                  strict
                   :min="0"
                   :max="maxQtyForItem(item)"
                   @update:model-value="
@@ -254,7 +255,7 @@
       )
       .reduce((sum, i) => sum + i.qty * (i.qty_per_base ?? 1), 0)
     return Math.max(
-      1,
+      0,
       Math.floor((stockQty - otherReserved) / (item.qty_per_base ?? 1))
     )
   }

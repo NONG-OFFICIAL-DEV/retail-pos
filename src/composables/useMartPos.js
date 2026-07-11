@@ -2,12 +2,10 @@
 import { computed } from 'vue'
 import { useAuthStore } from '@/stores/authStore'
 import { useMartStore } from '@/stores/martStore'
-import { useAppUtils } from '@/composables/useAppUtils'
 
 export function useMartPos() {
   const auth = useAuthStore()
   const mart = useMartStore()
-  const { notif } = useAppUtils()
 
   const operator = computed(() => ({
     displayName: [auth.me?.first_name, auth.me?.last_name]
@@ -39,8 +37,8 @@ export function useMartPos() {
   const removeItem = key => mart.removeFromCart(key) // ← item.id
   const clearCart = () => mart.clearCart()
   const setPayment = method => mart.setPaymentMethod(method)
-  const checkout = async () => {
-    await mart.checkout(notif)
+  const checkout = async (extraPayload = {}) => {
+    return await mart.checkout(extraPayload)
   }
 
   return {

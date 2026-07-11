@@ -228,7 +228,7 @@
   const openPicker = product => {
     if (!product.active_units?.length) {
       const alreadyInCart = martStore.cartItems
-        .filter(i => i.product_id === props.product.id && !i._is_lid_exchange)
+        .filter(i => i.product_id === product.id && !i._is_lid_exchange)
         .reduce((sum, i) => sum + i.qty * (i.qty_per_base ?? 1), 0)
 
       const available = parseFloat(product.stock_quantity ?? 0) - alreadyInCart

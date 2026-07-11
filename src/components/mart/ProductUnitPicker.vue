@@ -95,7 +95,7 @@
             </v-btn>
 
             <v-btn
-              v-if="product.category.is_lid_exchange"
+              v-if="product.category?.is_lid_exchange"
               value="lid_exchange"
               size="small"
               class="text-none px-3"
