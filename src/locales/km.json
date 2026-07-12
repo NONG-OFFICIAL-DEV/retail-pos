@@ -86,7 +86,8 @@
     "back_to_pos": "ត្រលប់ទៅ POS",
     "payment_method": "វិធីបង់ប្រាក់",
     "reprint": "បោះពុម្ពវិក័យប័ត្រឡើងវិញ",
-    "status_completed": "បានបញ្ចប់"
+    "status_completed": "បានបញ្ចប់",
+    "end_of_list": "គ្មានការបញ្ជាទិញបន្ថែមទៀតទេ"
   },
   "product": {
     "all_product": "ផលិតផលទាំងអស់"

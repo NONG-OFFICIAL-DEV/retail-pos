@@ -92,7 +92,8 @@
     "back_to_pos": "Back to POS",
     "payment_method": "Payment Method",
     "reprint": "Reprint Receipt",
-    "status_completed": "Completed"
+    "status_completed": "Completed",
+    "end_of_list": "No more orders to load"
   },
   "product": {
     "all_product": "All Product"

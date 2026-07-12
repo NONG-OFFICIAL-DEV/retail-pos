@@ -1,7 +1,7 @@
 <template>
   <div class="order-history-view">
     <!-- ── Toolbar ─────────────────────────────────────────────────────────── -->
-    <div class="d-flex align-center flex-wrap gap-2 mb-4">
+    <div class="order-toolbar d-flex align-center flex-wrap gap-2">
       <div class="flex-grow-1">
         <div class="text-h6 font-weight-black">{{ t('orders.history_title') }}</div>
         <div class="text-caption text-medium-emphasis">
@@ -112,6 +112,14 @@
           <v-icon icon="mdi-chevron-right" color="grey" size="20" />
         </div>
       </v-card>
+
+      <!-- Infinite scroll sentinel -->
+      <div ref="loadMoreTrigger" class="d-flex justify-center py-3">
+        <v-progress-circular v-if="loadingMore" size="22" width="2" indeterminate color="primary" />
+        <span v-else-if="!hasMoreOrders" class="text-caption text-medium-emphasis">
+          {{ t('orders.end_of_list') }}
+        </span>
+      </div>
     </template>
 
     <!-- ── Detail dialog ───────────────────────────────────────────────────── -->
@@ -219,7 +227,7 @@
 </template>
 
 <script setup>
-  import { ref, computed, onMounted, watch } from 'vue'
+  import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
   import { useI18n } from 'vue-i18n'
   import { formatKHR } from '@nong-official-dev/core'
   import { useOrderStore } from '@/stores/orderStore'
@@ -234,8 +242,11 @@
   const { printing, error, print } = useReceipt()
 
   const isLoading = ref(false)
+  const loadingMore = ref(false)
   const search = ref('')
   const quickFilter = ref('today')
+  const hasMoreOrders = computed(() => orderStore.hasMoreOrders)
+  const loadMoreTrigger = ref(null)
 
   const detailDialog = ref(false)
   const detailLoading = ref(false)
@@ -284,16 +295,48 @@
   }
 
   // ── Load ─────────────────────────────────────────────────────────────────
+  const listParams = () => ({ branch_id: authStore.branch_id })
+
   const loadOrders = async () => {
     isLoading.value = true
     try {
-      await orderStore.fetchAllOrders({ branch_id: authStore.branch_id })
+      await orderStore.fetchAllOrders(listParams())
     } catch (err) {
       notif(err.message || 'Failed to load orders', { type: 'error' })
     } finally {
       isLoading.value = false
     }
   }
+
+  const loadMore = async () => {
+    if (loadingMore.value || !hasMoreOrders.value) return
+    loadingMore.value = true
+    try {
+      await orderStore.fetchMoreOrders(listParams())
+    } catch (err) {
+      notif(err.message || 'Failed to load more orders', { type: 'error' })
+    } finally {
+      loadingMore.value = false
+    }
+  }
+
+  // ── Infinite scroll — observe the sentinel at the bottom of the list ──────
+  let observer = null
+  watch(loadMoreTrigger, (el, prevEl) => {
+    if (prevEl && observer) observer.unobserve(prevEl)
+    if (el && observer) observer.observe(el)
+  })
+
+  onMounted(() => {
+    observer = new IntersectionObserver(
+      entries => {
+        if (entries[0]?.isIntersecting) loadMore()
+      },
+      { rootMargin: '200px' }
+    )
+    if (loadMoreTrigger.value) observer.observe(loadMoreTrigger.value)
+  })
+  onUnmounted(() => observer?.disconnect())
 
   const isToday = d => {
     if (!d) return false
@@ -354,8 +397,22 @@
 
 <style scoped>
   .order-history-view {
-    padding: 4px;
+    position: relative;
   }
+
+  /* ── Sticky toolbar — same treatment as CategorySlider on the POS grid ── */
+  .order-toolbar {
+    position: sticky;
+    top: -16px;
+    z-index: 5;
+    margin: -16px -16px 16px -16px;
+    padding: 16px 16px 12px;
+    background: rgba(248, 250, 252, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid #e2e8f0;
+  }
+
   .order-row {
     transition: all 0.15s ease;
   }
