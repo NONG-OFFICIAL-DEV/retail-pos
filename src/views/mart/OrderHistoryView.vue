@@ -255,7 +255,7 @@
   // ── Field access helpers (backend field names may vary) ────────────────────
   const orderNumber = o => o.order_number ?? o.id ?? '-'
   const orderDate = o => o.created_at ?? o.placed_at ?? o.date ?? null
-  const orderTotal = o => parseFloat(o.total ?? o.grand_total ?? 0)
+  const orderTotal = o => parseFloat(o.total ?? o.total_amount ?? 0)
   const orderItems = o => o.items ?? o.order_items ?? []
   const itemCount = o => orderItems(o).length
   const cashierName = o =>
