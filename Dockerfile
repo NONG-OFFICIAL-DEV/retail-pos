@@ -30,7 +30,7 @@ RUN echo "@nong-official-dev:registry=https://npm.pkg.github.com" > .npmrc && \
     echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc
     
 COPY package*.json ./
-RUN npm install --legacy-peer-deps
+RUN npm install
 
 # Remove token after install
 RUN rm -f .npmrc
